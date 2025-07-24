@@ -9,6 +9,7 @@ using Content.Shared.Database;
 using Content.Shared.Ghost;
 using Content.Shared.Hands;
 using Content.Shared.Hands.Components;
+using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Input;
 using Content.Shared.Interaction.Components;
 using Content.Shared.Interaction.Events;
@@ -17,6 +18,7 @@ using Content.Shared.Inventory.Events;
 using Content.Shared.Item;
 using Content.Shared.Movement.Components;
 using Content.Shared.Movement.Pulling.Systems;
+using Content.Shared.Movement.Systems;
 using Content.Shared.Physics;
 using Content.Shared.Players.RateLimiting;
 using Content.Shared.Popups;
@@ -34,6 +36,7 @@ using Robust.Shared.Input.Binding;
 using Robust.Shared.Map;
 using Robust.Shared.Network;
 using Robust.Shared.Physics;
+using Robust.Shared.Physics.Collision.Shapes;
 using Robust.Shared.Physics.Components;
 using Robust.Shared.Physics.Systems;
 using Robust.Shared.Player;
@@ -53,21 +56,24 @@ namespace Content.Shared.Interaction
         [Dependency] private readonly IGameTiming _gameTiming = default!;
         [Dependency] private readonly IMapManager _mapManager = default!;
         [Dependency] private readonly ISharedAdminLogManager _adminLogger = default!;
+        [Dependency] private readonly ISharedChatManager _chat = default!;
         [Dependency] private readonly ActionBlockerSystem _actionBlockerSystem = default!;
+        [Dependency] private readonly EntityLookupSystem _lookup = default!;
+        [Dependency] private readonly SharedHandsSystem _hands = default!;
+        [Dependency] private readonly InventorySystem _inventory = default!;
+        [Dependency] private readonly PullingSystem _pullSystem = default!;
         [Dependency] private readonly RotateToFaceSystem _rotateToFaceSystem = default!;
         [Dependency] private readonly SharedContainerSystem _containerSystem = default!;
+        [Dependency] private readonly SharedMapSystem _map = default!;
         [Dependency] private readonly SharedPhysicsSystem _broadphase = default!;
         [Dependency] private readonly SharedTransformSystem _transform = default!;
         [Dependency] private readonly SharedVerbSystem _verbSystem = default!;
         [Dependency] private readonly SharedPopupSystem _popupSystem = default!;
-        [Dependency] private readonly UseDelaySystem _useDelay = default!;
-        [Dependency] private readonly PullingSystem _pullSystem = default!;
-        [Dependency] private readonly InventorySystem _inventory = default!;
-        [Dependency] private readonly TagSystem _tagSystem = default!;
         [Dependency] private readonly SharedUserInterfaceSystem _ui = default!;
         [Dependency] private readonly SharedStrippableSystem _strippable = default!;
         [Dependency] private readonly SharedPlayerRateLimitManager _rateLimit = default!;
-        [Dependency] private readonly ISharedChatManager _chat = default!;
+        [Dependency] private readonly TagSystem _tagSystem = default!;
+        [Dependency] private readonly UseDelaySystem _useDelay = default!;
 
         private EntityQuery<IgnoreUIRangeComponent> _ignoreUiRangeQuery;
         private EntityQuery<FixturesComponent> _fixtureQuery;
@@ -140,8 +146,7 @@ namespace Content.Shared.Interaction
 
         private void RateLimitAlertAdmins(ICommonSession session)
         {
-            if (CCVars.InteractionRateLimitAnnounceAdmins.DefaultValue) // ADT-Tweak:
-                _chat.SendAdminAlert(Loc.GetString("interaction-rate-limit-admin-announcement", ("player", session.Name))); // ADT-Tweak:
+            _chat.SendAdminAlert(Loc.GetString("interaction-rate-limit-admin-announcement", ("player", session.Name)));
         }
 
         public override void Shutdown()
@@ -212,7 +217,10 @@ namespace Content.Shared.Interaction
         /// </summary>
         private void OnRemoveAttempt(EntityUid uid, UnremoveableComponent item, ContainerGettingRemovedAttemptEvent args)
         {
-            args.Cancel();
+            // don't prevent the server state for the container from being applied to the client correctly
+            // otherwise this will cause an error if the client predicts adding UnremoveableComponent
+            if (!_gameTiming.ApplyingState)
+                args.Cancel();
         }
 
         /// <summary>
@@ -222,37 +230,25 @@ namespace Content.Shared.Interaction
         private void OnUnequip(EntityUid uid, UnremoveableComponent item, GotUnequippedEvent args)
         {
             if (!item.DeleteOnDrop)
-            {
                 RemCompDeferred<UnremoveableComponent>(uid);
-            }
-            else if (!Terminating(uid))
-            {
-                EntityManager.QueueDeleteEntity(uid); // безопасное удаление
-            }
+            else
+                PredictedQueueDel(uid);
         }
 
         private void OnUnequipHand(EntityUid uid, UnremoveableComponent item, GotUnequippedHandEvent args)
         {
             if (!item.DeleteOnDrop)
-            {
                 RemCompDeferred<UnremoveableComponent>(uid);
-            }
-            else if (!Terminating(uid))
-            {
-                EntityManager.QueueDeleteEntity(uid); // безопасное удаление
-            }
+            else
+                PredictedQueueDel(uid);
         }
 
         private void OnDropped(EntityUid uid, UnremoveableComponent item, DroppedEvent args)
         {
             if (!item.DeleteOnDrop)
-            {
                 RemCompDeferred<UnremoveableComponent>(uid);
-            }
-            else if (!Terminating(uid))
-            {
-                EntityManager.QueueDeleteEntity(uid); // безопасное удаление
-            }
+            else
+                PredictedQueueDel(uid);
         }
 
         private bool HandleTryPullObject(ICommonSession? session, EntityCoordinates coords, EntityUid uid)
@@ -349,7 +345,7 @@ namespace Content.Shared.Interaction
         public bool CombatModeCanHandInteract(EntityUid user, EntityUid? target)
         {
             // Always allow attack in these cases
-            if (target == null || !_handsQuery.TryComp(user, out var hands) || hands.ActiveHand?.HeldEntity is not null)
+            if (target == null || !_handsQuery.TryComp(user, out var hands) || _hands.GetActiveItem((user, hands)) is not null)
                 return false;
 
             // Only eat input if:
@@ -511,7 +507,7 @@ namespace Content.Shared.Interaction
                 return;
             }
 
-            // DebugTools.Assert(!IsDeleted(user) && !IsDeleted(target));
+            DebugTools.Assert(!IsDeleted(user) && !IsDeleted(target));
             // all interactions should only happen when in range / unobstructed, so no range check is needed
             var message = new InteractHandEvent(user, target);
             RaiseLocalEvent(target, message, true);
@@ -520,7 +516,7 @@ namespace Content.Shared.Interaction
             if (message.Handled)
                 return;
 
-            // DebugTools.Assert(!IsDeleted(user) && !IsDeleted(target));
+            DebugTools.Assert(!IsDeleted(user) && !IsDeleted(target));
             // Else we run Activate.
             InteractionActivate(user,
                 target,
@@ -555,7 +551,7 @@ namespace Content.Shared.Interaction
             if (RangedInteractDoBefore(user, used, target, clickLocation, inRangeUnobstructed, checkDeletion: false))
                 return;
 
-            // DebugTools.Assert(!IsDeleted(user) && !IsDeleted(used) && !IsDeleted(target));   // ADT Exception Fix
+            DebugTools.Assert(!IsDeleted(user) && !IsDeleted(used) && !IsDeleted(target));
             if (target != null)
             {
                 var rangedMsg = new RangedInteractEvent(user, used, target.Value, clickLocation);
@@ -567,7 +563,7 @@ namespace Content.Shared.Interaction
                     return;
             }
 
-            // DebugTools.Assert(!IsDeleted(user) && !IsDeleted(used) && !IsDeleted(target));   // ADT Exception Fix
+            DebugTools.Assert(!IsDeleted(user) && !IsDeleted(used) && !IsDeleted(target));
             InteractDoAfter(user, used, target, clickLocation, inRangeUnobstructed, checkDeletion: false);
         }
 
@@ -577,8 +573,11 @@ namespace Content.Shared.Interaction
             if (_transform.GetMapId(coordinates) != Transform(user).MapID)
                 return false;
 
-            if (!HasComp<NoRotateOnInteractComponent>(user))
+            // Only rotate to face if they're not moving.
+            if (!HasComp<NoRotateOnInteractComponent>(user) && (!TryComp(user, out InputMoverComponent? mover) || (mover.HeldMoveButtons & MoveButtons.AnyDirection) == 0x0))
+            {
                 _rotateToFaceSystem.TryFaceCoordinates(user, _transform.ToMapCoordinates(coordinates).Position);
+            }
 
             return true;
         }
@@ -750,7 +749,7 @@ namespace Content.Shared.Interaction
             var inRange = true;
             MapCoordinates originPos = default;
             var targetPos = _transform.ToMapCoordinates(otherCoordinates);
-            Angle targetRot = default;
+            Angle targetRot = _transform.GetWorldRotation(otherCoordinates.EntityId) + otherAngle;
 
             // So essentially:
             // 1. If fixtures available check nearest point. We take in coordinates / angles because we might want to use a lag compensated position
@@ -769,8 +768,7 @@ namespace Content.Shared.Interaction
             {
                 var (worldPosA, worldRotA) = _transform.GetWorldPositionRotation(origin.Comp);
                 var xfA = new Transform(worldPosA, worldRotA);
-                var parentRotB = _transform.GetWorldRotation(otherCoordinates.EntityId);
-                var xfB = new Transform(targetPos.Position, parentRotB + otherAngle);
+                var xfB = new Transform(targetPos.Position, targetRot);
 
                 // Different map or the likes.
                 if (!_broadphase.TryGetNearest(
@@ -812,8 +810,6 @@ namespace Content.Shared.Interaction
             else
             {
                 originPos = _transform.GetMapCoordinates(origin, origin);
-                var otherParent = (other.Comp ?? Transform(other)).ParentUid;
-                targetRot = otherParent.IsValid() ? Transform(otherParent).LocalRotation + otherAngle : otherAngle;
             }
 
             // Do a raycast to check if relevant
@@ -854,7 +850,7 @@ namespace Content.Shared.Interaction
         /// if the target entity is a wallmount we ignore all other entities on the tile.
         /// </example>
         private Ignored GetPredicate(
-            MapCoordinates origin,
+            MapCoordinates originCoords,
             EntityUid target,
             MapCoordinates targetCoords,
             Angle targetRotation,
@@ -867,7 +863,20 @@ namespace Content.Shared.Interaction
             {
                 // If the target is an item, we ignore any colliding entities. Currently done so that if items get stuck
                 // inside of walls, users can still pick them up.
-                ignored.UnionWith(_broadphase.GetEntitiesIntersectingBody(target, (int) collisionMask, false, physics)); // Note: This also bypasses items underneath doors, which may be problematic if it'd cause undesirable behavior.
+                // TODO: Bandaid, alloc spam
+                // We use 0.01 range just in case it's perfectly in between 2 walls and 1 gets missed.
+                foreach (var otherEnt in _lookup.GetEntitiesInRange(target, 0.01f, flags: LookupFlags.Static))
+                {
+                    if (target == otherEnt ||
+                        !_physicsQuery.TryComp(otherEnt, out var otherBody) ||
+                        !otherBody.CanCollide ||
+                        ((int)collisionMask & otherBody.CollisionLayer) == 0x0)
+                    {
+                        continue;
+                    }
+
+                    ignored.Add(otherEnt);
+                }
             }
             else if (_wallMountQuery.TryComp(target, out var wallMount))
             {
@@ -878,13 +887,13 @@ namespace Content.Shared.Interaction
                     ignoreAnchored = true;
                 else
                 {
-                    var angle = Angle.FromWorldVec(origin.Position - targetCoords.Position);
+                    var angle = Angle.FromWorldVec(originCoords.Position - targetCoords.Position);
                     var angleDelta = (wallMount.Direction + targetRotation - angle).Reduced().FlipPositive();
                     ignoreAnchored = angleDelta < wallMount.Arc / 2 || Math.Tau - angleDelta < wallMount.Arc / 2;
                 }
 
-                if (ignoreAnchored && _mapManager.TryFindGridAt(targetCoords, out _, out var grid))
-                    ignored.UnionWith(grid.GetAnchoredEntities(targetCoords));
+                if (ignoreAnchored && _mapManager.TryFindGridAt(targetCoords, out var gridUid, out var grid))
+                    ignored.UnionWith(_map.GetAnchoredEntities((gridUid, grid), targetCoords));
             }
 
             Ignored combinedPredicate = e => e == target || (predicate?.Invoke(e) ?? false) || ignored.Contains(e);
@@ -1033,7 +1042,7 @@ namespace Content.Shared.Interaction
             if (RangedInteractDoBefore(user, used, target, clickLocation, canReach: true, checkDeletion: false))
                 return true;
 
-            // DebugTools.Assert(!IsDeleted(user) && !IsDeleted(used) && !IsDeleted(target));
+            DebugTools.Assert(!IsDeleted(user) && !IsDeleted(used) && !IsDeleted(target));
             // all interactions should only happen when in range / unobstructed, so no range check is needed
             var interactUsingEvent = new InteractUsingEvent(user, used, target, clickLocation);
             RaiseLocalEvent(target, interactUsingEvent, true);
@@ -1046,7 +1055,7 @@ namespace Content.Shared.Interaction
             if (InteractDoAfter(user, used, target, clickLocation, canReach: true, checkDeletion: false))
                 return true;
 
-            // DebugTools.Assert(!IsDeleted(user) && !IsDeleted(used) && !IsDeleted(target));
+            DebugTools.Assert(!IsDeleted(user) && !IsDeleted(used) && !IsDeleted(target));
             return false;
         }
 
@@ -1083,7 +1092,7 @@ namespace Content.Shared.Interaction
             if (target == null)
                 return false;
 
-            //DebugTools.Assert(!IsDeleted(user) && !IsDeleted(used) && !IsDeleted(target));
+            DebugTools.Assert(!IsDeleted(user) && !IsDeleted(used) && !IsDeleted(target));
             var afterInteractUsingEvent = new AfterInteractUsingEvent(user, used, target, clickLocation, canReach);
             RaiseLocalEvent(target.Value, afterInteractUsingEvent);
 
@@ -1132,8 +1141,7 @@ namespace Content.Shared.Interaction
             if (checkDeletion && (IsDeleted(user) || IsDeleted(used)))
                 return false;
 
-            //DebugTools.Assert(!IsDeleted(user) && !IsDeleted(used));  // ADT Commented
-
+            DebugTools.Assert(!IsDeleted(user) && !IsDeleted(used));
             _delayQuery.TryComp(used, out var delayComponent);
             if (checkUseDelay && delayComponent != null && _useDelay.IsDelayed((used, delayComponent)))
                 return false;
@@ -1163,8 +1171,7 @@ namespace Content.Shared.Interaction
                 return true;
             }
 
-            //DebugTools.Assert(!IsDeleted(user) && !IsDeleted(used));  // ADT Commented
-
+            DebugTools.Assert(!IsDeleted(user) && !IsDeleted(used));
             var userEv = new UserActivateInWorldEvent(user, used, complexInteractions.Value);
             RaiseLocalEvent(user, userEv, true);
             if (!userEv.Handled)
@@ -1217,8 +1224,7 @@ namespace Content.Shared.Interaction
                 return true;
             }
 
-            //DebugTools.Assert(!IsDeleted(user) && !IsDeleted(used));  // ADT Commented
-
+            DebugTools.Assert(!IsDeleted(user) && !IsDeleted(used));
             // else, default to activating the item
             return InteractionActivate(user, used, false, false, false, checkDeletion: false);
         }
