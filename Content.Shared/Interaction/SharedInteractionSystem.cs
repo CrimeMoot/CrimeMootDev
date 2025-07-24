@@ -222,25 +222,37 @@ namespace Content.Shared.Interaction
         private void OnUnequip(EntityUid uid, UnremoveableComponent item, GotUnequippedEvent args)
         {
             if (!item.DeleteOnDrop)
+            {
                 RemCompDeferred<UnremoveableComponent>(uid);
-            else
-                PredictedQueueDel(uid);
+            }
+            else if (!Terminating(uid))
+            {
+                EntityManager.QueueDeleteEntity(uid); // безопасное удаление
+            }
         }
 
         private void OnUnequipHand(EntityUid uid, UnremoveableComponent item, GotUnequippedHandEvent args)
         {
             if (!item.DeleteOnDrop)
+            {
                 RemCompDeferred<UnremoveableComponent>(uid);
-            else
-                PredictedQueueDel(uid);
+            }
+            else if (!Terminating(uid))
+            {
+                EntityManager.QueueDeleteEntity(uid); // безопасное удаление
+            }
         }
 
         private void OnDropped(EntityUid uid, UnremoveableComponent item, DroppedEvent args)
         {
             if (!item.DeleteOnDrop)
+            {
                 RemCompDeferred<UnremoveableComponent>(uid);
-            else
-                PredictedQueueDel(uid);
+            }
+            else if (!Terminating(uid))
+            {
+                EntityManager.QueueDeleteEntity(uid); // безопасное удаление
+            }
         }
 
         private bool HandleTryPullObject(ICommonSession? session, EntityCoordinates coords, EntityUid uid)
