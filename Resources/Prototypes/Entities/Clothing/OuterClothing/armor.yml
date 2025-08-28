@@ -28,6 +28,12 @@
 - type: entity
   parent: [ BaseSecurityBartenderContraband, ClothingOuterArmorBase] # ADT-Tweak
   id: ClothingOuterArmorBasic
+  components:
+### Start ADT Tweak
+  - type: Tag
+    tags:
+      - ADTArmorSacrafice
+### End ADT Tweak
 
 #Alternate / slim basic armor vest
 - type: entity
@@ -41,6 +47,11 @@
     sprite: Clothing/OuterClothing/Armor/security_slim.rsi
   - type: Clothing
     sprite: Clothing/OuterClothing/Armor/security_slim.rsi
+### Start ADT Tweak
+  - type: Tag
+    tags:
+      - ADTArmorSacrafice
+### End ADT Tweak
 
 - type: entity
   parent: ClothingOuterArmorBase
@@ -167,6 +178,10 @@
         Slash: 0.6
         Piercing: 0.3
         Heat: 0.9
+  #ADT tweak start
+  - type: StaminaResistance
+    damageCoefficient: 0.7
+  #ADT tweak end
   - type: ExplosionResistance
     damageCoefficient: 0.9
 
@@ -193,6 +208,10 @@
         Heat: 0.3
         Radiation: 0.5
         Caustic: 0.5
+  #ADT tweak start
+  - type: StaminaResistance
+    damageCoefficient: 0.7
+  #ADT tweak end
   - type: ExplosionResistance
     damageCoefficient: 0.5
   - type: FireProtection
@@ -244,7 +263,10 @@
         Piercing: 0.35
         Heat: 0.35
         Caustic: 0.5
-    staminaModifier: 0.3  # ADT-Tweak
+  #ADT tweak start
+  - type: StaminaResistance
+    damageCoefficient: 0.3
+#ADT tweak end
   - type: ExplosionResistance
     damageCoefficient: 0.35
   #- type: StaminaResistance
@@ -326,7 +348,10 @@
         Piercing: 0.7
         Heat: 0.8 # ADT tweak 0.9 > 0.8
         Caustic: 0.9
-    staminaModifier: 0.65  # ADT-Tweak
+#ADT Tweak start
+  - type: StaminaResistance
+    damageCoefficient: 0.65
+#ADT Tweak end
   - type: ExplosionResistance
     damageCoefficient: 0.9
   - type: GroupExamine
