@@ -48,12 +48,11 @@ public sealed class JobTest
     private void AssertJob(TestPair pair, ProtoId<JobPrototype> job, NetUserId? user = null, bool isAntag = false)
     {
         var jobSys = pair.Server.System<SharedJobSystem>();
-        var mindSys = pair.Server.System<MindSystem>();
         var roleSys = pair.Server.System<RoleSystem>();
         var ticker = pair.Server.System<GameTicker>();
+        var mindSys = pair.Server.System<MindSystem>();
 
         user ??= pair.Client.User!.Value;
-
         var session = pair.Server.PlayerMan.SessionsDict.GetValueOrDefault(user.Value);
         var uid = session?.AttachedEntity;
 
@@ -75,19 +74,23 @@ public sealed class JobTest
         Assert.That(ticker.RunLevel, Is.EqualTo(GameRunLevel.InRound), $"Round not in progress while checking job {job}");
         Assert.That(ticker.PlayerGameStatuses[user.Value], Is.EqualTo(PlayerGameStatus.JoinedGame), $"Player {user} is not in game when checking job {job}");
 
-        var mind = mindSys.GetMind(uid!.Value);
-        Assert.That(mind, Is.Not.Null, $"Mind not found for entity {uid}. Cannot verify job {job}.");
+        if (!mindSys.TryGetMind(uid.Value, out var mindId, out _))
+        {
+            Console.WriteLine($"ERROR: Entity {uid} has no mind! Cannot verify job {job}.");
+            Assert.Fail($"Entity {uid} has no mind. Cannot verify job {job}.");
+            return;
+        }
 
-        var hasJob = jobSys.MindTryGetJobId(mind, out var actualJob);
-        Console.WriteLine($"Mind: {mind} | HasJob: {hasJob} | JobId: {(hasJob ? actualJob.ToString() : "null")}");
+        var hasJob = jobSys.MindTryGetJobId(mindId, out var actualJob);
+        Console.WriteLine($"Mind: {mindId} | HasJob: {hasJob} | JobId: {(hasJob ? actualJob.ToString() : "null")}");
 
         if (!hasJob)
         {
-            Console.WriteLine($"ERROR: Player {user} (mind {mind}) did not receive job {job}");
+            Console.WriteLine($"ERROR: Player {user} did not receive job {job}");
         }
         else if (actualJob != job)
         {
-            Console.WriteLine($"ERROR: Expected job {job}, but player {user} (mind {mind}) got {actualJob}");
+            Console.WriteLine($"ERROR: Expected job {job}, but player {user} got {actualJob}");
         }
         else
         {
@@ -96,7 +99,7 @@ public sealed class JobTest
 
         Assert.That(hasJob, $"Player {user} did not receive job {job}");
         Assert.That(actualJob, Is.EqualTo(job), $"Player {user} received {actualJob}, expected {job}");
-        Assert.That(roleSys.MindIsAntagonist(mind), Is.EqualTo(isAntag), $"Antagonist status mismatch for player {user}");
+        Assert.That(roleSys.MindIsAntagonist(mindId), Is.EqualTo(isAntag), $"Antagonist status mismatch for player {user}");
     }
 
     /// <summary>
@@ -132,9 +135,6 @@ public sealed class JobTest
         await pair.CleanReturnAsync();
     }
 
-    /// <summary>
-    /// Check that job preferences are respected.
-    /// </summary>
     [Test]
     public async Task JobPreferenceTest()
     {
