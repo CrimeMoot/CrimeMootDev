@@ -1,6 +1,7 @@
 #nullable enable
 using System.Collections.Generic;
 using System.Linq;
+using Robust.Shared.Log;
 using Content.IntegrationTests.Pair;
 using Content.Server.GameTicking;
 using Content.Server.Mind;
@@ -66,7 +67,11 @@ public sealed class JobTest
 
         if (uid != null && pair.Server.EntMan.EntityExists(uid.Value))
         {
-            Logger.Info($"Entity: {pair.Server.EntMan.GetComponentDebugDescription(uid.Value)}");
+            if (pair.Server.EntMan.TryGetComponent(uid.Value, out MetaDataComponent meta))
+            {
+                pair.Server.EntMan.TryGetComponent(uid.Value, out TransformComponent? xform);
+                Logger.Info($"Entity: {meta.EntityName} ({meta.EntityPrototype?.ID ?? "no proto"}) at {(xform != null ? xform.Coordinates.ToString() : "no transform")}");
+            }
         }
 
         Assert.That(ticker.RunLevel, Is.EqualTo(GameRunLevel.InRound));
