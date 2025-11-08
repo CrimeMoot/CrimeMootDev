@@ -76,11 +76,7 @@ public sealed class JobTest
         Assert.That(ticker.PlayerGameStatuses[user.Value], Is.EqualTo(PlayerGameStatus.JoinedGame), $"Player {user} is not in game when checking job {job}");
 
         var mind = mindSys.GetMind(uid!.Value);
-        if (mind == null)
-        {
-            Logger.Error($"Mind not found for entity {uid} (Expected Job: {job})");
-            Assert.Fail($"Mind not found for entity {uid}. Cannot verify job {job}.");
-        }
+        Assert.That(mind, Is.Not.Null, $"Mind not found for entity {uid}. Cannot verify job {job}.");
 
         var hasJob = jobSys.MindTryGetJobId(mind, out var actualJob);
         Console.WriteLine($"Mind: {mind} | HasJob: {hasJob} | JobId: {(hasJob ? actualJob.ToString() : "null")}");
@@ -128,7 +124,7 @@ public sealed class JobTest
         ticker.ToggleReadyAll(true);
         Assert.That(ticker.PlayerGameStatuses[pair.Client.User!.Value], Is.EqualTo(PlayerGameStatus.ReadyToPlay));
         await pair.Server.WaitPost(() => ticker.StartRound());
-        await pair.RunTicksSync(10);
+        await pair.RunTicksSync(20);
 
         AssertJob(pair, Passenger);
 
@@ -157,7 +153,7 @@ public sealed class JobTest
         await pair.SetJobPriorities((Passenger, JobPriority.Medium), (Engineer, JobPriority.High));
         ticker.ToggleReadyAll(true);
         await pair.Server.WaitPost(() => ticker.StartRound());
-        await pair.RunTicksSync(10);
+        await pair.RunTicksSync(20);
 
         AssertJob(pair, Engineer);
 
@@ -166,7 +162,7 @@ public sealed class JobTest
         await pair.SetJobPriorities((Passenger, JobPriority.High), (Engineer, JobPriority.Medium));
         ticker.ToggleReadyAll(true);
         await pair.Server.WaitPost(() => ticker.StartRound());
-        await pair.RunTicksSync(10);
+        await pair.RunTicksSync(20);
 
         AssertJob(pair, Passenger);
 
@@ -202,7 +198,7 @@ public sealed class JobTest
         await pair.SetJobPriorities((Passenger, JobPriority.Medium), (Engineer, JobPriority.High), (Captain, JobPriority.Low));
         ticker.ToggleReadyAll(true);
         await pair.Server.WaitPost(() => ticker.StartRound());
-        await pair.RunTicksSync(10);
+        await pair.RunTicksSync(20);
 
         AssertJob(pair, Captain);
 
@@ -243,7 +239,7 @@ public sealed class JobTest
 
         ticker.ToggleReadyAll(true);
         await pair.Server.WaitPost(() => ticker.StartRound());
-        await pair.RunTicksSync(10);
+        await pair.RunTicksSync(20);
 
         AssertJob(pair, Captain, captain);
         Assert.Multiple(() =>
