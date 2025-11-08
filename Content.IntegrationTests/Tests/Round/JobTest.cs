@@ -58,6 +58,7 @@ public sealed class JobTest
         var uid = session?.AttachedEntity;
 
         Logger.Info($@"=== AssertJob DEBUG ===
+        Expected Job: {job}
     User: {user}
     Session: {(session == null ? "null" : session.ToString())}
     AttachedEntity: {(uid == null ? "null" : uid.ToString())}
@@ -65,28 +66,41 @@ public sealed class JobTest
     Status: {(ticker.PlayerGameStatuses.TryGetValue(user.Value, out var status) ? status.ToString() : "no status")}
     ========================");
 
-        if (uid != null && pair.Server.EntMan.EntityExists(uid.Value))
+        if (uid == null)
         {
-            if (pair.Server.EntMan.TryGetComponent(uid.Value, out MetaDataComponent meta))
-            {
-                pair.Server.EntMan.TryGetComponent(uid.Value, out TransformComponent? xform);
-                Logger.Info($"Entity: {meta.EntityName} ({meta.EntityPrototype?.ID ?? "no proto"}) at {(xform != null ? xform.Coordinates.ToString() : "no transform")}");
-            }
+            Logger.Error($"User {user} has no attached entity! (Expected Job: {job})");
+            Assert.Fail($"User {user} has no attached entity. Cannot verify job {job}.");
         }
 
-        Assert.That(ticker.RunLevel, Is.EqualTo(GameRunLevel.InRound));
-        Assert.That(ticker.PlayerGameStatuses[user.Value], Is.EqualTo(PlayerGameStatus.JoinedGame));
+            Assert.That(ticker.RunLevel, Is.EqualTo(GameRunLevel.InRound), $"Round not in progress while checking job {job}");
+            Assert.That(ticker.PlayerGameStatuses[user.Value], Is.EqualTo(PlayerGameStatus.JoinedGame), $"Player {user} is not in game when checking job {job}");
 
-        Assert.That(pair.Server.EntMan.EntityExists(uid));
         var mind = mindSys.GetMind(uid!.Value);
-        Assert.That(pair.Server.EntMan.EntityExists(mind));
+        if (mind == null)
+        {
+            Logger.Error($"Mind not found for entity {uid} (Expected Job: {job})");
+            Assert.Fail($"Mind not found for entity {uid}. Cannot verify job {job}.");
+        }
 
         var hasJob = jobSys.MindTryGetJobId(mind, out var actualJob);
-            Logger.Info($"Mind: {mind} | HasJob: {hasJob} | JobId: {(hasJob ? actualJob.ToString() : "null")}");
+        Logger.Info($"Mind: {mind} | HasJob: {hasJob} | JobId: {(hasJob ? actualJob.ToString() : "null")}");
 
-        Assert.That(hasJob);
-        Assert.That(actualJob, Is.EqualTo(job));
-        Assert.That(roleSys.MindIsAntagonist(mind), Is.EqualTo(isAntag));
+        if (!hasJob)
+        {
+            Logger.Error($"Player {user} (mind {mind}) did not receive job {job}");
+        }
+        else if (actualJob != job)
+        {
+            Logger.Error($"Expected job {job}, but player {user} (mind {mind}) got {actualJob}");
+        }
+        else
+        {
+            Logger.Info($"Player {user} successfully received job {job}");
+        }
+    
+        Assert.That(hasJob, $"Player {user} did not receive job {job}");
+        Assert.That(actualJob, Is.EqualTo(job), $"Player {user} received {actualJob}, expected {job}");
+        Assert.That(roleSys.MindIsAntagonist(mind), Is.EqualTo(isAntag), $"Antagonist status mismatch for player {user}");
     }
 
     /// <summary>
