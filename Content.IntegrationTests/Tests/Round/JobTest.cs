@@ -58,7 +58,7 @@ public sealed class JobTest
         var uid = session?.AttachedEntity;
 
         Logger.Info($@"=== AssertJob DEBUG ===
-        Expected Job: {job}
+    Expected Job: {job}
     User: {user}
     Session: {(session == null ? "null" : session.ToString())}
     AttachedEntity: {(uid == null ? "null" : uid.ToString())}
@@ -67,13 +67,13 @@ public sealed class JobTest
     ========================");
 
         if (uid == null)
-        {
+            {
             Logger.Error($"User {user} has no attached entity! (Expected Job: {job})");
             Assert.Fail($"User {user} has no attached entity. Cannot verify job {job}.");
         }
 
-            Assert.That(ticker.RunLevel, Is.EqualTo(GameRunLevel.InRound), $"Round not in progress while checking job {job}");
-            Assert.That(ticker.PlayerGameStatuses[user.Value], Is.EqualTo(PlayerGameStatus.JoinedGame), $"Player {user} is not in game when checking job {job}");
+        Assert.That(ticker.RunLevel, Is.EqualTo(GameRunLevel.InRound), $"Round not in progress while checking job {job}");
+        Assert.That(ticker.PlayerGameStatuses[user.Value], Is.EqualTo(PlayerGameStatus.JoinedGame), $"Player {user} is not in game when checking job {job}");
 
         var mind = mindSys.GetMind(uid!.Value);
         if (mind == null)
@@ -97,7 +97,7 @@ public sealed class JobTest
         {
             Logger.Info($"Player {user} successfully received job {job}");
         }
-    
+
         Assert.That(hasJob, $"Player {user} did not receive job {job}");
         Assert.That(actualJob, Is.EqualTo(job), $"Player {user} received {actualJob}, expected {job}");
         Assert.That(roleSys.MindIsAntagonist(mind), Is.EqualTo(isAntag), $"Antagonist status mismatch for player {user}");
