@@ -57,7 +57,7 @@ public sealed class JobTest
         var session = pair.Server.PlayerMan.SessionsDict.GetValueOrDefault(user.Value);
         var uid = session?.AttachedEntity;
 
-        Logger.Info($@"=== AssertJob DEBUG ===
+        Console.WriteLine($@"=== AssertJob DEBUG ===
     Expected Job: {job}
     User: {user}
     Session: {(session == null ? "null" : session.ToString())}
@@ -67,8 +67,8 @@ public sealed class JobTest
     ========================");
 
         if (uid == null)
-            {
-            Logger.Error($"User {user} has no attached entity! (Expected Job: {job})");
+        {
+            Console.WriteLine($"ERROR: User {user} has no attached entity! (Expected Job: {job})");
             Assert.Fail($"User {user} has no attached entity. Cannot verify job {job}.");
         }
 
@@ -83,19 +83,19 @@ public sealed class JobTest
         }
 
         var hasJob = jobSys.MindTryGetJobId(mind, out var actualJob);
-        Logger.Info($"Mind: {mind} | HasJob: {hasJob} | JobId: {(hasJob ? actualJob.ToString() : "null")}");
+        Console.WriteLine($"Mind: {mind} | HasJob: {hasJob} | JobId: {(hasJob ? actualJob.ToString() : "null")}");
 
         if (!hasJob)
         {
-            Logger.Error($"Player {user} (mind {mind}) did not receive job {job}");
+            Console.WriteLine($"ERROR: Player {user} (mind {mind}) did not receive job {job}");
         }
         else if (actualJob != job)
         {
-            Logger.Error($"Expected job {job}, but player {user} (mind {mind}) got {actualJob}");
+            Console.WriteLine($"ERROR: Expected job {job}, but player {user} (mind {mind}) got {actualJob}");
         }
         else
         {
-            Logger.Info($"Player {user} successfully received job {job}");
+            Console.WriteLine($"SUCCESS: Player {user} successfully received job {job}");
         }
 
         Assert.That(hasJob, $"Player {user} did not receive job {job}");
