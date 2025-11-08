@@ -53,14 +53,33 @@ public sealed class JobTest
 
         user ??= pair.Client.User!.Value;
 
+        var session = pair.Server.PlayerMan.SessionsDict.GetValueOrDefault(user.Value);
+        var uid = session?.AttachedEntity;
+
+        Logger.Info($@"=== AssertJob DEBUG ===
+    User: {user}
+    Session: {(session == null ? "null" : session.ToString())}
+    AttachedEntity: {(uid == null ? "null" : uid.ToString())}
+    RoundLevel: {ticker.RunLevel}
+    Status: {(ticker.PlayerGameStatuses.TryGetValue(user.Value, out var status) ? status.ToString() : "no status")}
+    ========================");
+
+        if (uid != null && pair.Server.EntMan.EntityExists(uid.Value))
+        {
+            Logger.Info($"Entity: {pair.Server.EntMan.GetComponentDebugDescription(uid.Value)}");
+        }
+
         Assert.That(ticker.RunLevel, Is.EqualTo(GameRunLevel.InRound));
         Assert.That(ticker.PlayerGameStatuses[user.Value], Is.EqualTo(PlayerGameStatus.JoinedGame));
 
-        var uid = pair.Server.PlayerMan.SessionsDict.GetValueOrDefault(user.Value)?.AttachedEntity;
         Assert.That(pair.Server.EntMan.EntityExists(uid));
         var mind = mindSys.GetMind(uid!.Value);
         Assert.That(pair.Server.EntMan.EntityExists(mind));
-        Assert.That(jobSys.MindTryGetJobId(mind, out var actualJob));
+
+        var hasJob = jobSys.MindTryGetJobId(mind, out var actualJob);
+            Logger.Info($"Mind: {mind} | HasJob: {hasJob} | JobId: {(hasJob ? actualJob.ToString() : "null")}");
+
+        Assert.That(hasJob);
         Assert.That(actualJob, Is.EqualTo(job));
         Assert.That(roleSys.MindIsAntagonist(mind), Is.EqualTo(isAntag));
     }
