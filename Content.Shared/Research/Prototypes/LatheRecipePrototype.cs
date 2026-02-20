@@ -76,5 +76,13 @@ namespace Content.Shared.Research.Prototypes
         /// </summary>
         [DataField]
         public uint MiningPoints;
+
+        /// <summary>
+        /// Required alert level for this recipe to be available.
+        /// If null, the recipe is always available (assuming other requirements are met).
+        /// If set, the recipe is only available when the station's alert level matches.
+        /// </summary>
+        [DataField("requiredAlertLevel")]
+        public string? RequiredAlertLevel;
     }
 }

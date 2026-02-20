@@ -34,6 +34,8 @@ using Robust.Shared.Audio.Systems;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Timing;
 using Content.Shared.DocumentPrinter;
+using Content.Server.AlertLevel;
+using Content.Server.Station.Systems;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Content.Server.Lathe
@@ -58,6 +60,8 @@ namespace Content.Server.Lathe
         [Dependency] private readonly StackSystem _stack = default!;
         [Dependency] private readonly TransformSystem _transform = default!;
         [Dependency] private readonly RadioSystem _radio = default!;
+        [Dependency] private readonly StationSystem _station = default!;
+        [Dependency] private readonly AlertLevelSystem _alertLevel = default!;
 
         /// <summary>
         /// Per-tick cache
@@ -170,6 +174,22 @@ namespace Content.Server.Lathe
             AddRecipesFromPacks(ev.Recipes, component.StaticPacks);
             RaiseLocalEvent(uid, ev);
             return ev.Recipes.ToList();
+        }
+
+        public override bool CanProduce(EntityUid uid, LatheRecipePrototype recipe, int amount = 1, LatheComponent? component = null)
+        {
+            if (!base.CanProduce(uid, recipe, amount, component))
+                return false;
+
+            // Check if the recipe requires a specific alert level
+            if (recipe.RequiredAlertLevel != null)
+            {
+                var station = _station.GetOwningStation(uid);
+                if (station == null || _alertLevel.GetLevel(station.Value) != recipe.RequiredAlertLevel)
+                    return false;
+            }
+
+            return true;
         }
 
         public bool TryAddToQueue(EntityUid uid, LatheRecipePrototype recipe, int quantity, LatheComponent? component = null)
@@ -307,7 +327,9 @@ namespace Content.Server.Lathe
             if (producing == null && component.Queue.First is { } node)
                 producing = node.Value.Recipe;
 
-            var state = new LatheUpdateState(GetAvailableRecipes(uid, component), component.Queue.ToArray(), producing);
+            var station = _station.GetOwningStation(uid);
+            var alertLevel = station != null ? _alertLevel.GetLevel(station.Value) : null;
+            var state = new LatheUpdateState(GetAvailableRecipes(uid, component), component.Queue.ToArray(), producing, alertLevel);
             _uiSys.SetUiState(uid, LatheUiKey.Key, state);
         }
 

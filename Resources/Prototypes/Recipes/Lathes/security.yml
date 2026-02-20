@@ -258,6 +258,7 @@
   parent: BaseWeaponRecipeLong
   id: WeaponXrayCannon
   result: WeaponXrayCannon
+  requiredAlertLevel: red
   materials:
     Steel: 1500
     Glass: 500

@@ -47,6 +47,11 @@ public sealed partial class LatheMenu : DefaultWindow
 
     public EntityUid Entity;
 
+    /// <summary>
+    /// Current station alert level. Used to determine recipe availability based on alert level requirements.
+    /// </summary>
+    public string? CurrentAlertLevel;
+
     private uint? _lastMiningPoints; // ADT tweak: used to avoid Loc.GetString every frame
 
     public LatheMenu()
@@ -189,11 +194,13 @@ public sealed partial class LatheMenu : DefaultWindow
         foreach (var prototype in sortedRecipesToShow)
         {
             var canProduce = _lathe.CanProduce(Entity, prototype, quantity, component: lathe);
+            // Also check alert level requirement on client side
+            var alertLevelBlocked = IsRecipeBlockedByAlertLevel(prototype);
             var tooltipFunction = () => GenerateTooltipText(prototype);
 
             if (idx >= oldChildCount)
             {
-                var control = new RecipeControl(_lathe, prototype, tooltipFunction, canProduce, GetRecipeDisplayControl(prototype));
+                var control = new RecipeControl(_lathe, prototype, tooltipFunction, canProduce && !alertLevelBlocked, GetRecipeDisplayControl(prototype), alertLevelBlocked);
                 control.OnButtonPressed += s =>
                 {
                     if (!int.TryParse(AmountLineEdit.Text, out var amount) || amount <= 0)
@@ -214,7 +221,8 @@ public sealed partial class LatheMenu : DefaultWindow
 
                 child.SetRecipe(prototype);
                 child.SetTooltipSupplier(tooltipFunction);
-                child.SetCanProduce(canProduce);
+                child.SetCanProduce(canProduce && !alertLevelBlocked);
+                child.SetAlertLevelBlocked(alertLevelBlocked);
                 child.SetDisplayControl(GetRecipeDisplayControl(prototype));
             }
             idx++;
@@ -411,5 +419,20 @@ public sealed partial class LatheMenu : DefaultWindow
             CurrentCategory = Categories?[obj.Id];
         }
         PopulateRecipes();
+    }
+
+    /// <summary>
+    /// Checks if a recipe is blocked due to alert level requirements not being met.
+    /// </summary>
+    private bool IsRecipeBlockedByAlertLevel(LatheRecipePrototype recipe)
+    {
+        if (recipe.RequiredAlertLevel == null)
+            return false;
+
+        // If we don't know the current alert level, assume it's not met
+        if (CurrentAlertLevel == null)
+            return true;
+
+        return CurrentAlertLevel != recipe.RequiredAlertLevel;
     }
 }
