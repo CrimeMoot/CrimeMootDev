@@ -7,6 +7,7 @@
     sprite: Structures/Doors/Airlocks/Standard/freezer.rsi
   - type: Wires
     layoutId: AirlockService
+  - type: TechnicalAirlock # ADT-Tweak
 
 - type: entity
   parent: Airlock
@@ -55,6 +56,7 @@
     sprite: Structures/Doors/Airlocks/Standard/hydroponics.rsi
   - type: Wires
     layoutId: AirlockService
+  - type: TechnicalAirlock # ADT-Tweak
 
 - type: entity
   parent: Airlock
@@ -121,6 +123,7 @@
   components:
   - type: Sprite
     sprite: Structures/Doors/Airlocks/Standard/maint.rsi
+  - type: TechnicalAirlock # ADT-Tweak
 
 - type: entity
   parent: AirlockSecurity # if you get syndie door somehow it counts as sec
@@ -179,6 +182,7 @@
     sprite: Structures/Doors/Airlocks/Standard/hatch_maint.rsi
   - type: Paintable
     group: null
+  - type: TechnicalAirlock # ADT-Tweak
 
 - type: entity
   parent: Airlock
@@ -207,6 +211,7 @@
   components:
   - type: Sprite
     sprite: Structures/Doors/Airlocks/Glass/maint.rsi
+  - type: TechnicalAirlock # ADT-Tweak
 
 - type: entity
   parent: AirlockEngineeringGlass

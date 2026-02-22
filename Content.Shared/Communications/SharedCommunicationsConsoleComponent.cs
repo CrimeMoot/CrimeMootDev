@@ -73,6 +73,13 @@ namespace Content.Shared.Communications
     {
     }
 
+    // ADT-Tweak start
+    [Serializable, NetSerializable]
+    public sealed class CommunicationsConsoleToggleEmergencyAccessMessage : BoundUserInterfaceMessage
+    {
+    }
+    // ADT-Tweak end
+
     [Serializable, NetSerializable]
     public enum CommunicationsConsoleUiKey
     {

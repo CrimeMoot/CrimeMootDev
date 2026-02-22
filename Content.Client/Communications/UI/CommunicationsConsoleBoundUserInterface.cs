@@ -1,4 +1,4 @@
-﻿using Content.Shared.CCVar;
+using Content.Shared.CCVar;
 using Content.Shared.Chat;
 using Content.Shared.Communications;
 using Robust.Client.UserInterface;
@@ -27,6 +27,7 @@ namespace Content.Client.Communications.UI
             _menu.OnBroadcast += BroadcastButtonPressed;
             _menu.OnAlertLevel += AlertLevelSelected;
             _menu.OnEmergencyLevel += EmergencyShuttleButtonPressed;
+            _menu.OnEmergencyAccess += EmergencyAccessButtonPressed; // ADT-Tweak
         }
 
         public void AlertLevelSelected(string level)
@@ -67,6 +68,13 @@ namespace Content.Client.Communications.UI
         {
             SendMessage(new CommunicationsConsoleRecallEmergencyShuttleMessage());
         }
+
+        // ADT-Tweak start
+        public void EmergencyAccessButtonPressed()
+        {
+            SendMessage(new CommunicationsConsoleToggleEmergencyAccessMessage());
+        }
+        // ADT-Tweak emd
 
         protected override void UpdateState(BoundUserInterfaceState state)
         {

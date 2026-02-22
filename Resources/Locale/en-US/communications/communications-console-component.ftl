@@ -26,3 +26,11 @@ comms-console-announcement-title-centcom = Central Command
 comms-console-announcement-title-nukie = Syndicate Nuclear Operative
 comms-console-announcement-title-station-ai = Station AI
 comms-console-announcement-title-wizard = Wizard
+
+# Emergency access
+# ADT-Tweak: Localization for "Declare Emergency" button
+comms-console-menu-emergency-access-button = Declare Emergency
+comms-console-menu-emergency-access-button-tooltip = Toggle emergency access mode for all maintenance airlocks. Press again to disable.
+comms-console-emergency-access-title = EMERGENCY ALERT
+comms-console-emergency-access-activated = ATTENTION: Emergency access declared! All maintenance tunnels switched to emergency access mode.
+comms-console-emergency-access-deactivated = Attention: Emergency access deactivated. Maintenance tunnels returned to normal operation.

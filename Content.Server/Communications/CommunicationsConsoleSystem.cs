@@ -6,6 +6,8 @@ using Content.Server.Popups;
 using Content.Server.RoundEnd;
 using Content.Server.Screens.Components;
 using Content.Server.Shuttles.Systems;
+using Content.Server.ADT.Station.Components; // ADT-Tweak
+using Content.Server.ADT.Station.Systems; // ADT-Tweak
 using Content.Server.Station.Systems;
 using Content.Shared.Access.Components;
 using Content.Shared.Access.Systems;
@@ -35,6 +37,7 @@ namespace Content.Server.Communications
         [Dependency] private readonly UserInterfaceSystem _uiSystem = default!;
         [Dependency] private readonly IConfigurationManager _cfg = default!;
         [Dependency] private readonly IAdminLogManager _adminLogger = default!;
+        [Dependency] private readonly EmergencyAccessSystem _emergencyAccessSystem = default!; // ADT-Tweak
 
         private const float UIUpdateInterval = 5.0f;
 
@@ -51,6 +54,7 @@ namespace Content.Server.Communications
             SubscribeLocalEvent<CommunicationsConsoleComponent, CommunicationsConsoleBroadcastMessage>(OnBroadcastMessage);
             SubscribeLocalEvent<CommunicationsConsoleComponent, CommunicationsConsoleCallEmergencyShuttleMessage>(OnCallShuttleMessage);
             SubscribeLocalEvent<CommunicationsConsoleComponent, CommunicationsConsoleRecallEmergencyShuttleMessage>(OnRecallShuttleMessage);
+            SubscribeLocalEvent<CommunicationsConsoleComponent, CommunicationsConsoleToggleEmergencyAccessMessage>(OnToggleEmergencyAccessMessage); // ADT-Tweak
 
             // On console init, set cooldown
             SubscribeLocalEvent<CommunicationsConsoleComponent, MapInitEvent>(OnCommunicationsConsoleMapInit);
@@ -330,6 +334,35 @@ namespace Content.Server.Communications
             _roundEndSystem.CancelRoundEndCountdown(uid);
             _adminLogger.Add(LogType.Action, LogImpact.High, $"{ToPrettyString(message.Actor):player} has recalled the shuttle.");
         }
+
+        // ADT-Tweak start
+        private void OnToggleEmergencyAccessMessage(EntityUid uid, CommunicationsConsoleComponent comp, CommunicationsConsoleToggleEmergencyAccessMessage message)
+        {
+            var mob = message.Actor;
+
+            if (!CanUse(mob, uid))
+            {
+                _popupSystem.PopupEntity(Loc.GetString("comms-console-permission-denied"), uid, message.Actor);
+                return;
+            }
+
+            var station = _stationSystem.GetOwningStation(uid);
+            if (station == null)
+                return;
+
+            var emergencyActive = TryComp<EmergencyAccessComponent>(station.Value, out var emergencyAccess) && emergencyAccess.IsActive;
+
+            _emergencyAccessSystem.ToggleEmergencyAccess(station.Value, !emergencyActive);
+
+            var announcementText = emergencyActive
+                ? Loc.GetString("comms-console-emergency-access-deactivated")
+                : Loc.GetString("comms-console-emergency-access-activated");
+
+            _chatSystem.DispatchStationAnnouncement(station.Value, announcementText, Loc.GetString("comms-console-emergency-access-title"));
+
+            _adminLogger.Add(LogType.Action, LogImpact.Medium, $"{ToPrettyString(mob):player} has {(emergencyActive ? "deactivated" : "activated")} emergency access mode.");
+        }
+        // ADT-Tweak end
     }
 
     /// <summary>

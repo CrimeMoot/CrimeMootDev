@@ -9,6 +9,8 @@ comms-console-menu-alert-level-button-tooltip = Изменение уровня 
 comms-console-menu-call-shuttle = Вызвать
 comms-console-menu-recall-shuttle = Отозвать
 comms-console-menu-emergency-shuttle-button-tooltip = Вызывает или отзывает эвакуационный шаттл. Вы можете отозвать шаттл, только если осталось достаточно времени.
+comms-console-menu-emergency-access-button = Объявить ЧП
+comms-console-menu-emergency-access-button-tooltip = Переключить все технические шлюзы в режим аварийного доступа. Нажмите ещё раз, чтобы отключить.
 comms-console-menu-time-remaining = Оставшееся время: { $time }
 # Popup
 comms-console-permission-denied = В доступе отказано
@@ -23,3 +25,7 @@ comms-console-announcement-title-centcom = Центральное командо
 comms-console-announcement-title-nukie = Ядерные оперативники Синдиката
 comms-console-announcement-title-station-ai = Станционный ИИ
 comms-console-announcement-title-wizard = Волшебник
+# ADT-Tweak: Emergency access
+comms-console-emergency-access-title = ЧРЕЗВЫЧАЙНОЕ ПОЛОЖЕНИЕ
+comms-console-emergency-access-activated = ВНИМАНИЕ: Объявлено чрезвычайное положение! Все технические туннели переведены в режим аварийного доступа.
+comms-console-emergency-access-deactivated = Внимание: Чрезвычайное положение отменено. Технические туннели возвращены в нормальный режим работы.
