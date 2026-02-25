@@ -1,4 +1,6 @@
-﻿using Content.Shared.Alert;
+﻿using Content.Shared.Access.Components;
+using Content.Shared.ADT.Silicons.Borgs;
+using Content.Shared.Alert;
 using Content.Shared.Whitelist;
 using Robust.Shared.Containers;
 using Robust.Shared.GameStates;
@@ -12,7 +14,7 @@ namespace Content.Shared.Silicons.Borgs.Components;
 /// "brain", legs, modules, and battery. Essentially the master component
 /// for borg logic.
 /// </summary>
-[RegisterComponent, NetworkedComponent, Access(typeof(SharedBorgSystem)), AutoGenerateComponentState]
+[RegisterComponent, NetworkedComponent, Access(typeof(SharedBorgSystem), typeof(SharedSyndicateSaboteurChassisSwitchSystem)), AutoGenerateComponentState]
 public sealed partial class BorgChassisComponent : Component
 {
     #region Brain

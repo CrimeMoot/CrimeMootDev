@@ -1,3 +1,4 @@
+using Content.Shared.ADT.Silicons.Borgs;
 using Content.Shared.Access.Systems;
 using Content.Shared.StationRecords;
 using Robust.Shared.GameStates;
@@ -11,7 +12,7 @@ namespace Content.Shared.Access.Components;
 /// and allows checking if something or somebody is authorized with these access levels.
 /// </summary>
 [RegisterComponent, NetworkedComponent]
-[Access(typeof(AccessReaderSystem))]
+[Access(typeof(AccessReaderSystem), typeof(SharedSyndicateSaboteurChassisSwitchSystem))]
 public sealed partial class AccessReaderComponent : Component
 {
     /// <summary>

@@ -1,0 +1,65 @@
+<controls:FancyWindow xmlns="https://spacestation14.io"
+                      xmlns:controls="clr-namespace:Content.Client.UserInterface.Controls"
+                      xmlns:customControls="clr-namespace:Content.Client.Administration.UI.CustomControls"
+                      xmlns:chassisSpriteControls="clr-namespace:Content.Client.ADT.Silicons.Borgs"
+                      Title="{Loc 'saboteur-chassis-switch-menu-title'}"
+                      SetSize="650 550">
+    <BoxContainer Orientation="Vertical">
+        <BoxContainer Orientation="Horizontal" VerticalExpand="True">
+            <!-- Left pane: selection of borg type -->
+            <BoxContainer Orientation="Vertical" MinWidth="200" Margin="2 0">
+                <Label Text="{Loc 'saboteur-chassis-switch-available-types'}" StyleClasses="LabelHeading" />
+                <ScrollContainer HScrollEnabled="False" VerticalExpand="True">
+                    <BoxContainer Name="TypeSelectionsContainer" Orientation="Vertical" />
+                </ScrollContainer>
+            </BoxContainer>
+
+            <customControls:VSeparator />
+
+            <!-- Middle pane: selection of chassis subtype -->
+            <BoxContainer Orientation="Vertical" MinWidth="200" Margin="2 0">
+                <Label Text="{Loc 'saboteur-chassis-switch-available-chassis'}" StyleClasses="LabelHeading" />
+                <ScrollContainer HScrollEnabled="False" VerticalExpand="True">
+                    <BoxContainer Name="ChassisSelectionsContainer" Orientation="Vertical" />
+                </ScrollContainer>
+            </BoxContainer>
+
+            <customControls:VSeparator />
+
+            <!-- Right pane: information about selected chassis, rename, confirm button. -->
+            <BoxContainer Orientation="Vertical" HorizontalExpand="True" Margin="2 0">
+                <Label Text="{Loc 'saboteur-chassis-switch-information'}" StyleClasses="LabelHeading" />
+                <Control VerticalExpand="True">
+                    <controls:Placeholder Name="InfoPlaceholder" PlaceholderText="{Loc 'saboteur-chassis-switch-select-chassis'}" />
+                    <BoxContainer Name="InfoContents" Orientation="Vertical" Visible="False">
+                        <BoxContainer Orientation="Horizontal" Margin="0 0 0 4">
+                            <EntityPrototypeView Name="ChassisView" Scale="2,2" />
+                            <Label Name="NameLabel" HorizontalExpand="True" />
+                        </BoxContainer>
+
+                        <RichTextLabel Name="DescriptionLabel" VerticalExpand="True" VerticalAlignment="Top" />
+                        
+                        <customControls:HSeparator Margin="0 5 0 5"/>
+                        
+                        <!-- Rename section -->
+                        <BoxContainer Orientation="Vertical" Margin="0 0 0 5">
+                            <Label Text="{Loc 'saboteur-chassis-switch-rename'}" StyleClasses="LabelSubHeading"/>
+                            <LineEdit Name="RenameInput" 
+                                      PlaceHolder="{Loc 'saboteur-chassis-switch-rename-placeholder'}"
+                                      HorizontalExpand="True"/>
+                        </BoxContainer>
+                    </BoxContainer>
+                </Control>
+
+                <controls:ConfirmButton Name="ConfirmChassisButton" Text="{Loc 'saboteur-chassis-switch-confirm'}"
+                                        Disabled="True" HorizontalAlignment="Right"
+                                        MinWidth="200" />
+            </BoxContainer>
+        </BoxContainer>
+
+        <controls:StripeBack Margin="0 0 0 4">
+            <Label Text="{Loc 'saboteur-chassis-switch-bottom-text'}" HorizontalAlignment="Center" StyleClasses="LabelSubText" Margin="4 4 0 4"/>
+        </controls:StripeBack>
+    </BoxContainer>
+
+</controls:FancyWindow>

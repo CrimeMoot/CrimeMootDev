@@ -196,13 +196,18 @@
     - type: Sprite
       layers:
         - state: synd_engi
+          map: ["enum.BorgVisualLayers.Body"]
         - state: synd_engi_e
+          map: ["enum.BorgVisualLayers.Light"]
+          shader: unshaded
+          visible: false
+        - state: synd_engi_e_r
           map: ["enum.BorgVisualLayers.Light"]
           shader: unshaded
           visible: false
         - state: synd_engi_l
           shader: unshaded
-          map: ["light"]
+          map: ["enum.BorgVisualLayers.LightStatus"]
           visible: false
     - type: BorgChassis
       maxModules: 3
@@ -212,7 +217,7 @@
           - BorgModuleEngineering
           - BorgModuleSyndicate
       hasMindState: synd_engi_e
-      noMindState: synd_engi
+      noMindState: synd_engi_e_r
     - type: ShowHealthBars
       damageContainers:
       - Inorganic
@@ -222,6 +227,12 @@
       interactFailureString: petting-failure-syndicate-cyborg
       interactSuccessSound:
         path: /Audio/Ambience/Objects/periodic_beep.ogg
+    - type: UserInterface
+      interfaces:
+        enum.SaboteurChassisSwitchUiKey.SelectChassis:
+          type: SaboteurChassisSwitchBoundUserInterface
+    - type: SyndicateSaboteurChassisSwitch
+      currentBorgSubtype: syndicate_saboteur
 
 - type: entity
   id: BorgChassisDerelict

@@ -480,6 +480,10 @@
             "directions": 4
         },
         {
+            "name": "synd_engi_e_r",
+            "directions": 4
+        },
+        {
             "name": "synd_engi_l",
             "directions": 4
         },

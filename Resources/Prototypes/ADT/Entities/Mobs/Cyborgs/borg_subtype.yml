@@ -4,42 +4,70 @@
   id: default_generic
   sprite: Mobs/Silicon/chassis.rsi
   dummyPrototype: BorgChassisGeneric
+  spriteBodyState: robot
+  spriteHasMindState: robot_e
+  spriteNoMindState: robot_e_r
+  spriteToggleLightState: robot_l
 
 - type: borgSubtype
   parentBorgType: mining
   id: default_mining
   sprite: Mobs/Silicon/chassis.rsi
   dummyPrototype: BorgChassisMining
+  spriteBodyState: miner
+  spriteHasMindState: miner_e
+  spriteNoMindState: miner_e_r
+  spriteToggleLightState: miner_l
 
 - type: borgSubtype
   parentBorgType: engineering
   id: default_engineering
   sprite: Mobs/Silicon/chassis.rsi
   dummyPrototype: BorgChassisEngineer
+  spriteBodyState: engineer
+  spriteHasMindState: engineer_e
+  spriteNoMindState: engineer_e_r
+  spriteToggleLightState: engineer_l
 
 - type: borgSubtype
   parentBorgType: janitor
   id: default_janitor
   sprite: Mobs/Silicon/chassis.rsi
   dummyPrototype: BorgChassisJanitor
+  spriteBodyState: janitor
+  spriteHasMindState: janitor_e
+  spriteNoMindState: janitor_e_r
+  spriteToggleLightState: janitor_l
 
 - type: borgSubtype
   parentBorgType: medical
   id: default_medical
   sprite: Mobs/Silicon/chassis.rsi
   dummyPrototype: BorgChassisMedical
+  spriteBodyState: medical
+  spriteHasMindState: medical_e
+  spriteNoMindState: medical_e_r
+  spriteToggleLightState: medical_l
 
 - type: borgSubtype
   parentBorgType: service
   id: default_service
   sprite: Mobs/Silicon/chassis.rsi
   dummyPrototype: BorgChassisService
+  spriteBodyState: service
+  spriteHasMindState: service_e
+  spriteNoMindState: service_e_r
+  spriteToggleLightState: service_l
 
 - type: borgSubtype
   parentBorgType: security
   id: default_security
   sprite: Mobs/Silicon/chassis.rsi
   dummyPrototype: ADTBorgChassisSec
+  spriteBodyState: sec
+  spriteHasMindState: sec_e
+  spriteNoMindState: sec_e_r
+  spriteToggleLightState: sec_l
 
 #Custom subtypes
 
@@ -49,6 +77,10 @@
   id: old_generic
   sprite: ADT/Mobs/Silicon/Borgs/Borg_subtype/Generic/old_generic.rsi
   dummyPrototype: ADTOldBorgChassisGeneric
+  spriteBodyState: robot
+  spriteHasMindState: robot_e
+  spriteNoMindState: robot_e_r
+  spriteToggleLightState: robot_l
 
 #Engineer
 - type: borgSubtype
@@ -56,6 +88,10 @@
   id: tread_engineer
   sprite: ADT/Mobs/Silicon/Borgs/Borg_subtype/Engineering/tread_engineer.rsi
   dummyPrototype: ADTTreadBorgChassisEngineer
+  spriteBodyState: engineer
+  spriteHasMindState: engineer_e
+  spriteNoMindState: engineer_e_r
+  spriteToggleLightState: engineer_l
 
 #Medical
 - type: borgSubtype
@@ -63,6 +99,10 @@
   id: qualified_doctor
   sprite: ADT/Mobs/Silicon/Borgs/Borg_subtype/Medical/qualified_doctor.rsi
   dummyPrototype: ADTQualifiedDoctorChassis
+  spriteBodyState: medical
+  spriteHasMindState: medical_e
+  spriteNoMindState: medical_e_r
+  spriteToggleLightState: medical_l
 
 #Security
 - type: borgSubtype
@@ -70,12 +110,20 @@
   id: egg_security
   sprite: ADT/Mobs/Silicon/Borgs/Borg_subtype/Security/egg_security.rsi
   dummyPrototype: ADTEggSecurityChassis
+  spriteBodyState: sec
+  spriteHasMindState: sec_e
+  spriteNoMindState: sec_e_r
+  spriteToggleLightState: sec_l
 
 - type: borgSubtype
   parentBorgType: security
   id: tread_security
   sprite: ADT/Mobs/Silicon/Borgs/Borg_subtype/Security/tread_security.rsi
   dummyPrototype: ADTTreadSecurityChassis
+  spriteBodyState: sec
+  spriteHasMindState: sec_e
+  spriteNoMindState: sec_e_r
+  spriteToggleLightState: sec_l
 
 #Service
 - type: borgSubtype
@@ -83,24 +131,40 @@
   id: bartender_service
   sprite: ADT/Mobs/Silicon/Borgs/Borg_subtype/Service/bartender_service.rsi
   dummyPrototype: ADTBartenderServiceChassis
+  spriteBodyState: service
+  spriteHasMindState: service_e
+  spriteNoMindState: service_e_r
+  spriteToggleLightState: service_l
 
 - type: borgSubtype
   parentBorgType: service
   id: brobot_service
   sprite: ADT/Mobs/Silicon/Borgs/Borg_subtype/Service/brobot_service.rsi
   dummyPrototype: ADTBroBotServiceChassis
+  spriteBodyState: service
+  spriteHasMindState: service_e
+  spriteNoMindState: service_e_r
+  spriteToggleLightState: service_l
 
 - type: borgSubtype
   parentBorgType: service
   id: female_service
   sprite: ADT/Mobs/Silicon/Borgs/Borg_subtype/Service/female_service.rsi
   dummyPrototype: ADTFemaleServiceChassis
+  spriteBodyState: service
+  spriteHasMindState: service_e
+  spriteNoMindState: service_e_r
+  spriteToggleLightState: service_l
 
 - type: borgSubtype
   parentBorgType: service
   id: kerfus_service
   sprite: ADT/Mobs/Silicon/Borgs/Borg_subtype/Service/cyborg_kerfus.rsi
   dummyPrototype: ADTKerfusServiceChassis
+  spriteBodyState: kerfusNT
+  spriteHasMindState: kerfusNT_e
+  spriteNoMindState: kerfus_e_r
+  spriteToggleLightState: kerfusNT_l
 
 #Janitor
 - type: borgSubtype
@@ -108,3 +172,18 @@
   id: kerfus_janitor
   sprite: ADT/Mobs/Silicon/Borgs/Borg_subtype/Janitor/cyborg_maid_kerfus.rsi
   dummyPrototype: ADTKerfusJanitorChassis
+  spriteBodyState: janitor
+  spriteHasMindState: janitor_e
+  spriteNoMindState: janitor_e_r
+  spriteToggleLightState: janitor_l
+
+# Syndicate Saboteur subtype
+- type: borgSubtype
+  parentBorgType: engineering
+  id: syndicate_saboteur
+  sprite: Mobs/Silicon/chassis.rsi
+  dummyPrototype: BorgChassisSyndicateSaboteur
+  spriteBodyState: synd_engi
+  spriteHasMindState: synd_engi_e
+  spriteNoMindState: synd_engi_e_r
+  spriteToggleLightState: synd_engi_l

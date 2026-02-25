@@ -26,3 +26,18 @@
     useDelay: 0.5
   - type: InstantAction
     event: !type:BorgToggleSelectTypeEvent
+
+- type: entity
+  parent: BaseAction
+  id: ActionSaboteurChassisSwitch
+  name: Switch Chassis
+  description: Switch your chassis appearance to disguise as another borg type.
+  components:
+  - type: Action
+    itemIconStyle: NoItem
+    icon:
+      sprite: Interface/Actions/actions_borg.rsi
+      state: select-type
+    useDelay: 0.5
+  - type: InstantAction
+    event: !type:SaboteurToggleChassisSwitchEvent

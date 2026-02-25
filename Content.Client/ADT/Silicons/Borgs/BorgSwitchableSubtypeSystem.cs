@@ -35,7 +35,6 @@ public sealed partial class BorgSwitchableSubtypeSystem : SharedBorgSwitchableSu
     protected override void SetAppearanceFromSubtype(Entity<BorgSwitchableSubtypeComponent> ent, ProtoId<BorgSubtypePrototype> subtype)
     {
         if (!_prototypeManager.TryIndex(subtype, out var subtypePrototype)
-            || !_prototypeManager.TryIndex(subtypePrototype.ParentBorgType, out var borgType)
             || !TryComp(ent, out SpriteComponent? sprite))
             return;
 
@@ -43,11 +42,6 @@ public sealed partial class BorgSwitchableSubtypeSystem : SharedBorgSwitchableSu
 
         if (_resourceCache.TryGetResource<RSIResource>(rsiPath, out var resource))
         {
-            subtypePrototype.SpriteBodyState = borgType.SpriteBodyState;
-            subtypePrototype.SpriteToggleLightState = borgType.SpriteToggleLightState;
-            subtypePrototype.SpriteHasMindState = borgType.SpriteHasMindState;
-            subtypePrototype.SpriteNoMindState = borgType.SpriteNoMindState;
-
             if (!_appearance.TryGetData<bool>(ent, BorgVisuals.HasPlayer, out var hasPlayer))
                 hasPlayer = false;
 

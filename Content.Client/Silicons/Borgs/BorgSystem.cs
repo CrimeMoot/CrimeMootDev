@@ -1,8 +1,10 @@
-﻿using Content.Shared.Mobs;
+﻿using Content.Shared.ADT.Silicons.Borgs.Components;
+using Content.Shared.Mobs;
 using Content.Shared.Silicons.Borgs;
 using Content.Shared.Silicons.Borgs.Components;
 using Robust.Client.GameObjects;
 using Robust.Shared.Containers;
+using Robust.Shared.Prototypes;
 
 namespace Content.Client.Silicons.Borgs;
 
@@ -11,6 +13,7 @@ public sealed class BorgSystem : SharedBorgSystem
 {
     [Dependency] private readonly AppearanceSystem _appearance = default!;
     [Dependency] private readonly SpriteSystem _sprite = default!;
+    [Dependency] private readonly IPrototypeManager Prototypes = default!;
 
     public override void Initialize()
     {
@@ -66,7 +69,20 @@ public sealed class BorgSystem : SharedBorgSystem
             hasPlayer = false;
 
         _sprite.LayerSetVisible((uid, sprite), BorgVisualLayers.Light, component.BrainEntity != null || hasPlayer);
-        _sprite.LayerSetRsiState((uid, sprite), BorgVisualLayers.Light, hasPlayer ? component.HasMindState : component.NoMindState);
+        
+        // Check if this is a saboteur borg with active subtype - use subtype states instead
+        if (TryComp<SyndicateSaboteurChassisSwitchComponent>(uid, out var saboteurComp) &&
+            saboteurComp.CurrentBorgSubtype.HasValue &&
+            Prototypes.TryIndex(saboteurComp.CurrentBorgSubtype.Value, out var subtypePrototype))
+        {
+            _sprite.LayerSetRsiState((uid, sprite), BorgVisualLayers.Light, 
+                hasPlayer ? subtypePrototype.SpriteHasMindState : subtypePrototype.SpriteNoMindState);
+        }
+        else
+        {
+            _sprite.LayerSetRsiState((uid, sprite), BorgVisualLayers.Light, 
+                hasPlayer ? component.HasMindState : component.NoMindState);
+        }
     }
 
     private void OnMMIAppearanceChanged(EntityUid uid, MMIComponent component, ref AppearanceChangeEvent args)
