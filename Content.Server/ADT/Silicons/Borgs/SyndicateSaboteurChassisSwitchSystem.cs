@@ -10,6 +10,9 @@ using Content.Shared.Corvax.TTS;
 using Content.Shared.Interaction;
 using Content.Shared.Interaction.Components;
 using Content.Shared.Inventory;
+using Content.Shared.Mobs;
+using Content.Shared.Mobs.Components;
+using Content.Shared.Mobs.Systems;
 using Content.Shared.Movement.Components;
 using Content.Shared.Radio;
 using Content.Shared.Radio.Components;
@@ -32,6 +35,7 @@ public sealed class SyndicateSaboteurChassisSwitchSystem : SharedSyndicateSabote
     [Dependency] private readonly EntityWhitelistSystem _whitelist = default!;
     [Dependency] private readonly BorgSystem _borgSystem = default!;
     [Dependency] private readonly AccessSystem _access = default!;
+    [Dependency] private readonly MobStateSystem _mobState = default!;
 
     public override void Initialize()
     {
@@ -42,6 +46,41 @@ public sealed class SyndicateSaboteurChassisSwitchSystem : SharedSyndicateSabote
             {
                 sub.Event<SaboteurSelectChassisMessage>(OnChassisSelected);
             });
+
+        // Listen for death to disable disguise
+        SubscribeLocalEvent<SyndicateSaboteurChassisSwitchComponent, MobStateChangedEvent>(OnMobStateChanged);
+    }
+
+    private void OnMobStateChanged(Entity<SyndicateSaboteurChassisSwitchComponent> ent, ref MobStateChangedEvent args)
+    {
+        // Check if borg has died
+        if (args.NewMobState == MobState.Dead)
+        {
+            DisableDisguise(ent);
+        }
+    }
+
+    private void DisableDisguise(Entity<SyndicateSaboteurChassisSwitchComponent> ent)
+    {
+        // Reset to syndicate saboteur appearance
+        if (Prototypes.TryIndex<BorgSubtypePrototype>("syndicate_saboteur", out var saboteurSubtype) &&
+            Prototypes.TryIndex<BorgTypePrototype>("engineering", out var engineeringType))
+        {
+            ent.Comp.CurrentBorgSubtype = "syndicate_saboteur";
+            ApplyDisguise(ent, saboteurSubtype, engineeringType, forceReset: true);
+            
+            // Reset name
+            _metaData.SetEntityName(ent.Owner, string.Empty);
+            ent.Comp.CustomName = string.Empty;
+            
+            // Reset description
+            _metaData.SetEntityDescription(ent.Owner, Loc.GetString("ent-BorgChassisSyndicateSaboteur.desc"));
+            
+            Dirty(ent);
+            UpdateVisuals(ent);
+            
+            Logger.InfoS("borg.saboteur", $"Disguise disabled for {ent.Owner} due to death");
+        }
     }
 
     private void OnChassisSelected(Entity<SyndicateSaboteurChassisSwitchComponent> ent, ref SaboteurSelectChassisMessage args)
@@ -99,7 +138,8 @@ public sealed class SyndicateSaboteurChassisSwitchSystem : SharedSyndicateSabote
     private void ApplyDisguise(
         Entity<SyndicateSaboteurChassisSwitchComponent> ent,
         BorgSubtypePrototype subtype,
-        BorgTypePrototype borgType)
+        BorgTypePrototype borgType,
+        bool forceReset = false)
     {
         var uid = ent.Owner;
 
@@ -107,33 +147,57 @@ public sealed class SyndicateSaboteurChassisSwitchSystem : SharedSyndicateSabote
         if (TryComp<BorgChassisComponent>(uid, out var borgChassis))
         {
             var chassisEnt = (uid, borgChassis);
-            
-            // Update max modules (extra + default modules)
-            _borgSystem.SetMaxModules(chassisEnt, borgType.ExtraModuleCount + borgType.DefaultModules.Length);
-            
+
+            // Count existing syndicate modules (they don't count towards maxModules)
+            var syndicateModuleCount = borgChassis.ModuleContainer.ContainedEntities
+                .Count(m =>
+                {
+                    var protoId = Comp<MetaDataComponent>(m).EntityPrototype?.ID;
+                    return protoId != null && protoId.Contains("Syndicate");
+                });
+
+            // Update max modules (extra + default modules + syndicate modules for hidden storage)
+            // Syndicate modules are hidden and don't count towards the visible limit
+            _borgSystem.SetMaxModules(chassisEnt, borgType.ExtraModuleCount + borgType.DefaultModules.Length + syndicateModuleCount);
+
             // Update module whitelist
             if (borgType.ModuleWhitelist != null)
             {
                 _borgSystem.SetModuleWhitelist(chassisEnt, borgType.ModuleWhitelist);
             }
+
+            // ONLY remove non-syndicate modules (preserve syndicate modules!)
+            var modulesToRemove = borgChassis.ModuleContainer.ContainedEntities
+                .Where(m =>
+                {
+                    var protoId = Comp<MetaDataComponent>(m).EntityPrototype?.ID;
+                    // Keep syndicate modules
+                    return protoId == null || !protoId.Contains("Syndicate");
+                })
+                .ToList();
             
-            // Remove existing modules
-            var modulesToRemove = borgChassis.ModuleContainer.ContainedEntities.ToList();
             foreach (var module in modulesToRemove)
             {
                 _borgSystem.UninstallModule(uid, module, borgChassis);
                 EntityManager.DeleteEntity(module);
             }
-            
-            // Add default modules for this borg type
-            foreach (var module in borgType.DefaultModules)
+
+            // Add default modules for this borg type (only if not already present)
+            var existingModules = borgChassis.ModuleContainer.ContainedEntities
+                .Select(m => Comp<MetaDataComponent>(m).EntityPrototype?.ID)
+                .ToHashSet();
+
+            foreach (var moduleProto in borgType.DefaultModules)
             {
-                var moduleEntity = Spawn(module);
-                var borgModule = Comp<BorgModuleComponent>(moduleEntity);
-                _borgSystem.SetBorgModuleDefault((moduleEntity, borgModule), true);
-                _borgSystem.InsertModule(chassisEnt, moduleEntity);
+                if (!existingModules.Contains(moduleProto.Id))
+                {
+                    var moduleEntity = Spawn(moduleProto);
+                    var borgModule = Comp<BorgModuleComponent>(moduleEntity);
+                    _borgSystem.SetBorgModuleDefault((moduleEntity, borgModule), true);
+                    _borgSystem.InsertModule(chassisEnt, moduleEntity);
+                }
             }
-            
+
             Dirty(uid, borgChassis);
         }
 
@@ -149,15 +213,10 @@ public sealed class SyndicateSaboteurChassisSwitchSystem : SharedSyndicateSabote
         // === 3. Update radio channels ===
         UpdateRadioChannels(uid, borgType.RadioChannels);
 
-        // === 4. Add additional components ===
-        // Note: Adding components dynamically requires proper serialization support
-        // For now, we skip this part. Components like SolutionScanner, ShowHealthBars
-        // would need to be added through a more sophisticated system.
-
-        // === 5. Update Access ===
+        // === 4. Update Access ===
         UpdateAccess(uid, borgType, subtype.ID == "syndicate_saboteur");
 
-        // === 6. Update footstep sounds ===
+        // === 5. Update footstep sounds ===
         if (borgType.FootstepCollection != null)
         {
             if (TryComp<FootstepModifierComponent>(uid, out var footstep))
@@ -167,7 +226,7 @@ public sealed class SyndicateSaboteurChassisSwitchSystem : SharedSyndicateSabote
             }
         }
 
-        // === 7. Update TTS voice ===
+        // === 6. Update TTS voice ===
         if (!string.IsNullOrEmpty(borgType.VoicePrototypeId))
         {
             if (TryComp<TTSComponent>(uid, out var tts))
@@ -177,7 +236,7 @@ public sealed class SyndicateSaboteurChassisSwitchSystem : SharedSyndicateSabote
             }
         }
 
-        // === 8. Update pet strings ===
+        // === 7. Update pet strings ===
         if (!string.IsNullOrEmpty(borgType.PetSuccessString) || !string.IsNullOrEmpty(borgType.PetFailureString))
         {
             if (TryComp<InteractionPopupComponent>(uid, out var interaction))
@@ -217,7 +276,7 @@ public sealed class SyndicateSaboteurChassisSwitchSystem : SharedSyndicateSabote
 
     private void UpdateAccess(EntityUid uid, BorgTypePrototype borgType, bool isSaboteur)
     {
-        // Update AccessComponent tags
+        // Update AccessComponent tags and groups
         if (TryComp<AccessComponent>(uid, out var access))
         {
             if (isSaboteur)
@@ -228,7 +287,9 @@ public sealed class SyndicateSaboteurChassisSwitchSystem : SharedSyndicateSabote
                     Prototypes.Index<AccessLevelPrototype>("SyndicateAgent"),
                     Prototypes.Index<AccessLevelPrototype>("NuclearOperative")
                 };
-                _access.TrySetTags(uid, syndicateTags, access);
+                access.Tags.Clear();
+                access.Tags.UnionWith(syndicateTags);
+                Dirty(uid, access);
             }
             else
             {
@@ -237,7 +298,37 @@ public sealed class SyndicateSaboteurChassisSwitchSystem : SharedSyndicateSabote
                 {
                     Prototypes.Index<AccessLevelPrototype>("Borg")
                 };
-                _access.TrySetTags(uid, borgTags, access);
+                access.Tags.Clear();
+                access.Tags.UnionWith(borgTags);
+                Dirty(uid, access);
+            }
+        }
+
+        // Also update AccessReader if present
+        if (TryComp<AccessReaderComponent>(uid, out var accessReader))
+        {
+            if (isSaboteur)
+            {
+                accessReader.AccessLists = new List<HashSet<ProtoId<AccessLevelPrototype>>>
+                {
+                    new HashSet<ProtoId<AccessLevelPrototype>>
+                    {
+                        Prototypes.Index<AccessLevelPrototype>("SyndicateAgent"),
+                        Prototypes.Index<AccessLevelPrototype>("NuclearOperative")
+                    }
+                };
+                Dirty(uid, accessReader);
+            }
+            else
+            {
+                accessReader.AccessLists = new List<HashSet<ProtoId<AccessLevelPrototype>>>
+                {
+                    new HashSet<ProtoId<AccessLevelPrototype>>
+                    {
+                        Prototypes.Index<AccessLevelPrototype>("Borg")
+                    }
+                };
+                Dirty(uid, accessReader);
             }
         }
     }

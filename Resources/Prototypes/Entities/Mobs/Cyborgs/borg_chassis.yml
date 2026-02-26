@@ -193,6 +193,7 @@
   name: syndicate saboteur cyborg
   description: A streamlined engineering cyborg, equipped with covert modules. Its chameleon projector lets it disguise itself as a Nanotrasen cyborg.
   components:
+    # ADT-Tweak start
     - type: Sprite
       layers:
         - state: synd_engi
@@ -209,6 +210,7 @@
           shader: unshaded
           map: ["enum.BorgVisualLayers.LightStatus"]
           visible: false
+    # ADT-Tweak end
     - type: BorgChassis
       maxModules: 3
       moduleWhitelist:
@@ -227,12 +229,28 @@
       interactFailureString: petting-failure-syndicate-cyborg
       interactSuccessSound:
         path: /Audio/Ambience/Objects/periodic_beep.ogg
+    # ADT-Tweak start
     - type: UserInterface
       interfaces:
+        enum.SiliconLawsUiKey.Key:
+          type: SiliconLawBoundUserInterface
+          requireInputValidation: false
+        enum.BorgUiKey.Key:
+          type: BorgBoundUserInterface
+        enum.StrippingUiKey.Key:
+          type: StrippableBoundUserInterface
         enum.SaboteurChassisSwitchUiKey.SelectChassis:
           type: SaboteurChassisSwitchBoundUserInterface
+        enum.BorgInfoUiKey.BorgInfo:
+          type: BorgInfoBoundUserInterface
+    - type: CrewManifestViewer
+      ownerKey: enum.BorgInfoUiKey.BorgInfo
+    - type: BorgInfo
+    - type: ActivatableUI
+      key: enum.BorgUiKey.Key
     - type: SyndicateSaboteurChassisSwitch
       currentBorgSubtype: syndicate_saboteur
+    # ADT-Tweak end
 
 - type: entity
   id: BorgChassisDerelict

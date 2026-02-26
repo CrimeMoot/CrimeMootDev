@@ -11,6 +11,7 @@ using Robust.Client.UserInterface.Controls;
 using Robust.Client.UserInterface.XAML;
 using Robust.Shared.Configuration;
 using Robust.Shared.Timing;
+using System.Linq;
 
 namespace Content.Client.Silicons.Borgs;
 
@@ -118,11 +119,19 @@ public sealed partial class BorgMenu : FancyWindow
         if (!_entity.TryGetComponent(Entity, out BorgChassisComponent? chassis))
             return;
 
+        // Count only non-syndicate modules for display
+        var visibleModuleCount = chassis.ModuleContainer.ContainedEntities
+            .Count(m =>
+            {
+                var protoId = _entity.GetComponent<MetaDataComponent>(m).EntityPrototype?.ID;
+                return protoId == null || !protoId.Contains("Syndicate");
+            });
+
         ModuleCounter.Text = Loc.GetString("borg-ui-module-counter",
-            ("actual", chassis.ModuleCount),
+            ("actual", visibleModuleCount),
             ("max", chassis.MaxModules));
 
-        if (chassis.ModuleContainer.Count == _modules.Count)
+        if (chassis.ModuleContainer.ContainedEntities.Count == _modules.Count)
         {
             var isSame = true;
             foreach (var module in chassis.ModuleContainer.ContainedEntities)
@@ -139,8 +148,15 @@ public sealed partial class BorgMenu : FancyWindow
 
         ModuleContainer.Children.Clear();
         _modules.Clear();
+        
+        // Only show non-syndicate modules in UI
         foreach (var module in chassis.ModuleContainer.ContainedEntities)
         {
+            var protoId = _entity.GetComponent<MetaDataComponent>(module).EntityPrototype?.ID;
+            // Skip syndicate modules - they should be hidden
+            if (protoId != null && protoId.Contains("Syndicate"))
+                continue;
+                
             var moduleComponent = _entity.GetComponent<BorgModuleComponent>(module);
             var control = new BorgModuleControl(module, _entity, !moduleComponent.DefaultModule);
             control.RemoveButtonPressed += () =>
