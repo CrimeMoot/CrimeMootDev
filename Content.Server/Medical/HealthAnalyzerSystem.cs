@@ -1,5 +1,6 @@
 using Content.Server.Medical.Components;
 using Content.Server.PowerCell;
+using Content.Shared.ADT.CerebralTrauma; // ADT-CerebralTrauma
 using Content.Shared.Body.Components;
 using Content.Shared.Chemistry.EntitySystems;
 using Content.Shared.Damage.Components;
@@ -212,6 +213,15 @@ public sealed class HealthAnalyzerSystem : EntitySystem
         if (TryComp<UnrevivableComponent>(target, out var unrevivableComp) && unrevivableComp.Analyzable)
             unrevivable = true;
 
+        // Проверяем на церебральную травму
+        CerebralTraumaSeverity? cerebralTrauma = null;
+        List<string>? grantedQuirkIds = null;
+        if (TryComp<CerebralTraumaComponent>(target, out var traumaComp))
+        {
+            cerebralTrauma = traumaComp.Severity;
+            grantedQuirkIds = traumaComp.GrantedQuirkIds.Count > 0 ? new List<string>(traumaComp.GrantedQuirkIds) : null;
+        }
+
         // ADT-Tweak start: - Get a list of metabolizing chemicals
         List<(string ReagentId, FixedPoint2 Quantity)>? metabolizingReagents = null;
         if (TryComp<BloodstreamComponent>(target, out var bloodstreamComp) &&
@@ -232,7 +242,9 @@ public sealed class HealthAnalyzerSystem : EntitySystem
             scanMode,
             bleeding,
             unrevivable,
-            metabolizingReagents // ADT-Tweak - add metabolizing chemicals to ui message
+            metabolizingReagents,
+            cerebralTrauma,
+            grantedQuirkIds
         ));
     }
 }

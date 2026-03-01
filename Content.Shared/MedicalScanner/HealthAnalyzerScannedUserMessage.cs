@@ -1,3 +1,4 @@
+using Content.Shared.ADT.CerebralTrauma; // ADT-CerebralTrauma
 using Content.Shared.FixedPoint; // ADT-Tweak
 using Robust.Shared.Serialization;
 
@@ -16,8 +17,10 @@ public sealed class HealthAnalyzerScannedUserMessage : BoundUserInterfaceMessage
     public bool? Bleeding;
     public bool? Unrevivable;
     public List<(string ReagentId, FixedPoint2 Quantity)>? MetabolizingReagents; // ADT-Tweak - list of metabolizing reagents inside scanned user
+    public CerebralTraumaSeverity? CerebralTrauma; // ADT-CerebralTrauma
+    public List<string>? GrantedQuirkIds; // ADT-Tweak - список квирков выданных травмой
 
-    public HealthAnalyzerScannedUserMessage(NetEntity? targetEntity, float temperature, float bloodLevel, bool? scanMode, bool? bleeding, bool? unrevivable, List<(string ReagentId, FixedPoint2 Quantity)>? metabolizingReagents = null) // Starlight - added metabolizingReagents parameter
+    public HealthAnalyzerScannedUserMessage(NetEntity? targetEntity, float temperature, float bloodLevel, bool? scanMode, bool? bleeding, bool? unrevivable, List<(string ReagentId, FixedPoint2 Quantity)>? metabolizingReagents = null, CerebralTraumaSeverity? cerebralTrauma = null, List<string>? grantedQuirkIds = null) // Starlight - added metabolizingReagents parameter // ADT-Tweak
     {
         TargetEntity = targetEntity;
         Temperature = temperature;
@@ -26,6 +29,8 @@ public sealed class HealthAnalyzerScannedUserMessage : BoundUserInterfaceMessage
         Bleeding = bleeding;
         Unrevivable = unrevivable;
         MetabolizingReagents = metabolizingReagents; // ADT-Tweak
+        CerebralTrauma = cerebralTrauma; // ADT-CerebralTrauma
+        GrantedQuirkIds = grantedQuirkIds; // ADT-Tweak
     }
 }
 

@@ -137,6 +137,8 @@
   name: trait-impaired-mobility-name
   description: trait-impaired-mobility-desc
   traitGear: OffsetCane
-  category: Disabilities
+  category: Quirks  # ADT-Tweak: Перенесено из Disabilities в Quirks
   components:
     - type: ImpairedMobility
+  cost: -2
+  quirk: true

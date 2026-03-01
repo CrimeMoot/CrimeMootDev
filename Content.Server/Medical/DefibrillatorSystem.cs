@@ -26,7 +26,8 @@ using Content.Shared.ADT.Atmos.Miasma;
 using Content.Shared.Changeling.Components;
 using Robust.Server.Containers;
 using System.Linq;
-using Content.Server.Resist; //ADT-Medicine
+using Content.Server.Resist;
+using Content.Server.ADT.CerebralTrauma;
 
 namespace Content.Server.Medical;
 
@@ -51,6 +52,7 @@ public sealed class DefibrillatorSystem : EntitySystem
     [Dependency] private readonly SharedMindSystem _mind = default!;
     [Dependency] private readonly ContainerSystem _container = default!;
     [Dependency] private readonly UseDelaySystem _useDelay = default!;
+    [Dependency] private readonly CerebralTraumaSystem _cerebralTrauma = default!; //ADT-Tweak: Система церебральных травм
 
 
     /// <inheritdoc/>
@@ -235,26 +237,29 @@ public sealed class DefibrillatorSystem : EntitySystem
             if (_mobState.IsDead(target, mob))
                 _damageable.TryChangeDamage(target, component.ZapHeal, true, origin: uid);
 
-            if (_mobThreshold.TryGetThresholdForState(target, MobState.Dead, out var threshold) &&
+            // ADT-Tweak: Проверяем наличие души (MindComponent) ПЕРЕД поднятием
+            ICommonSession? playerSession = null;
+            var hasMind = _mind.TryGetMind(target, out _, out var mind) &&
+                          _player.TryGetSessionById(mind.UserId, out playerSession);
+
+            // Поднимаем ТОЛЬКО если есть душа/игрок
+            if (hasMind && playerSession != null &&
+                _mobThreshold.TryGetThresholdForState(target, MobState.Dead, out var threshold) &&
                 TryComp<DamageableComponent>(target, out var damageableComponent) &&
                 damageableComponent.TotalDamage < threshold)
             {
                 _mobState.ChangeMobState(target, MobState.Critical, mob, uid);
                 dead = false;
-            }
-
-            if (_mind.TryGetMind(target, out _, out var mind) &&
-                _player.TryGetSessionById(mind.UserId, out var playerSession))
-            {
                 session = playerSession;
                 // notify them they're being revived.
-                if (mind.CurrentEntity != target)
+                if (mind != null && mind.CurrentEntity != target)
                 {
-                    _euiManager.OpenEui(new ReturnToBodyEui(mind, _mind, _player), session);
+                    _euiManager.OpenEui(new ReturnToBodyEui(mind, _mind, _player), playerSession);
                 }
             }
-            else
+            else if (!hasMind)
             {
+                // ADT-Tweak: Нет души - не можем поднять
                 _chatManager.TrySendInGameICMessage(uid, Loc.GetString("defibrillator-no-mind"),
                     InGameICChatType.Speak, true);
             }
@@ -272,5 +277,11 @@ public sealed class DefibrillatorSystem : EntitySystem
         // TODO clean up this clown show above
         var ev = new TargetDefibrillatedEvent(user, (uid, component));
         RaiseLocalEvent(target, ref ev);
+
+        // Добавляем церебральную травму при успешной реанимации
+        if (!dead && session != null)
+        {
+            _cerebralTrauma.AddTrauma(target);
+        }
     }
 }

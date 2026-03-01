@@ -136,11 +136,14 @@ reagent-desc-necrosol = A necrotic substance that seems to be able to heal froze
 reagent-name-aloxadone = aloxadone
 reagent-desc-aloxadone = A cryogenics chemical. Used to treat severe burns and frostbite via regeneration of the affected tissue. Works regardless of the patient being alive or dead.
 
+# ADT-Tweak: Reagents for cerebral trauma treatment
 reagent-name-mannitol = mannitol
-reagent-desc-mannitol = Efficiently restores brain damage.
+reagent-desc-mannitol = Cures light cerebral trauma.
+reagent-effect-cure-cerebral-trauma = Cures light cerebral trauma
 
 reagent-name-psicodine = psicodine
-reagent-desc-psicodine = Suppresses anxiety and other various forms of mental distress. Overdose causes hallucinations and minor toxin damage.
+reagent-desc-psicodine = Cures serious cerebral trauma. Suppresses anxiety and other various forms of mental distress. Overdose causes hallucinations and minor toxin damage.
+reagent-effect-cure-serious-cerebral-trauma = Cures serious cerebral trauma
 
 reagent-name-potassium-iodide = potassium iodide
 reagent-desc-potassium-iodide = Will reduce the damaging effects of radiation by 90%. Prophylactic use only.
