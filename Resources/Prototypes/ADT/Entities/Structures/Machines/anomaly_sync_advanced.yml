@@ -1,0 +1,29 @@
+# ADT - Улучшенный синхронизатор аномалий с автоматической стабилизацией
+
+- type: entity
+  id: MachineAnomalySynchronizerAdvanced
+  parent: MachineAnomalySynchronizer
+  name: advanced anomaly synchronizer
+  description: "Усовершенствованный синхронизатор аномалий с системой автоматической стабилизации. При критическом состоянии аномалии автоматически отправляет стабилизирующие частицы и оповещает учёных через рацию."
+  components:
+  - type: AnomalySynchronizerAdvanced
+  - type: AnomalySynchronizerAutoStabilize
+    enabled: true
+    stabilityThreshold: 0.2
+    stabilizationParticleType: Delta
+    stabilizationCooldown: 3
+  - type: Sprite
+    noRot: true
+    sprite: Structures/Machines/anomaly_sync.rsi
+    layers:
+    - state: base
+      color: "#4a90d9"
+    - state: energy
+      shader: unshaded
+      map: ["enum.PowerDeviceVisualLayers.Powered"]
+      color: "#4a90d9"
+  - type: PointLight
+    radius: 1.8
+    energy: 3.0
+    color: "#4a90d9"
+  - type: LitOnPowered
