@@ -14,6 +14,12 @@
       visible: false
       shader: unshaded
       map: [ "light" ]
+  - type: ToggleableLightVisuals
+    spriteLayer: light
+    clothingVisuals:
+      head:
+      - state: equipped-head-light
+        shader: unshaded
   - type: Clothing
     clothingVisuals:
       head:

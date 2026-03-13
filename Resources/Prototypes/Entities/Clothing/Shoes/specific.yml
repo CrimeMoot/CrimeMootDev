@@ -114,6 +114,11 @@
     sprite: Clothing/Shoes/Specific/galoshes.rsi
   - type: Clothing
     sprite: Clothing/Shoes/Specific/galoshes.rsi
+    # ADT-Tweak start
+    clothingVisuals:
+      shoes:
+      - state: equipped-FEET
+    # ADT-Tweak end
   - type: NoSlip
   - type: SlowedOverSlippery
     slowdownModifier: 0.7

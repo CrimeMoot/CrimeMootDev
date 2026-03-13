@@ -406,6 +406,13 @@
   components:
   - type: Sprite
     sprite: Clothing/Uniforms/Jumpsuit/janitor.rsi
+  # ADT-Tweak start
+  - type: Clothing
+    sprite: Clothing/Uniforms/Jumpsuit/janitor.rsi
+    clothingVisuals:
+      jumpsuit:
+      - state: equipped-INNERCLOTHING
+  # ADT-Tweak end
 
 - type: entity
   parent: ClothingUniformBase
