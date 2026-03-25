@@ -62,47 +62,37 @@ jobs:
       - name: Package client
         run: dotnet run --project Content.Packaging client --no-wipe-release
 
-      - name: Wait for build to complete
-        run: Start-Sleep -Seconds 5
-
       - name: List all zip files
         run: |
-          Write-Host "=== All ZIP files ==="
-          Get-ChildItem -Path "." -Filter "*.zip" -Recurse | ForEach-Object { Write-Host $_.FullName }
+          Get-ChildItem -Path "release" -Filter "*.zip" | ForEach-Object { Write-Host $_.Name }
 
       - name: Create release archive
         run: |
-          # Находим архив сервера
-          $serverZip = Get-ChildItem -Path "." -Filter "SS14.Server_win-x64.zip" -Recurse | Select-Object -First 1
-          # Находим архив клиента
-          $clientZip = Get-ChildItem -Path "." -Filter "SS14.Client_win-x64.zip" -Recurse | Select-Object -First 1
-          
+          $serverZip = Get-ChildItem -Path "release" -Filter "SS14.Server_win-x64.zip" | Select-Object -First 1
+          $clientZip = Get-ChildItem -Path "release" -Filter "SS14.Client.zip" | Select-Object -First 1
+
           if (-not $serverZip) {
-            Write-Error "SS14.Server_win-x64.zip not found!"
+            Write-Error "SS14.Server_win-x64.zip not found in release folder!"
             exit 1
           }
           if (-not $clientZip) {
-            Write-Error "SS14.Client_win-x64.zip not found!"
+            Write-Error "SS14.Client.zip not found in release folder!"
             exit 1
           }
-          
+
           Write-Host "Server: $($serverZip.FullName)"
           Write-Host "Client: $($clientZip.FullName)"
-          
-          # Создаём папку для распаковки
+
           $extractDir = "release_content"
           New-Item -ItemType Directory -Force -Path $extractDir | Out-Null
-          
-          # Распаковываем сервер
+
           Expand-Archive -Path $serverZip.FullName -DestinationPath $extractDir -Force
-          
-          # Распаковываем клиент (в ту же папку)
+
           Expand-Archive -Path $clientZip.FullName -DestinationPath $extractDir -Force
-          
-          # Создаём итоговый архив
+
           $newName = "SS14.Server_${{ steps.version.outputs.VERSION }}.zip"
           Compress-Archive -Path "$extractDir\*" -DestinationPath $newName -Force
-          
+
           Write-Host "Created: $newName"
           echo "SERVER_ZIP=$newName" >> $env:GITHUB_ENV
       - name: Create tag for release
@@ -137,7 +127,6 @@ jobs:
             **Включает:**
             - Сервер (Robust.Server.exe)
             - Клиент (Robust.Client.exe)
-            Для запуска следует запустить оба .bat файла.
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
