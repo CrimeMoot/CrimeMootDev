@@ -63,9 +63,18 @@ jobs:
       - name: Package server (Windows x64)
         run: dotnet run --project Content.Packaging server --platform win-x64
 
+      - name: Debug - Show bin structure
+        run: |
+          Write-Host "=== Bin directory ==="
+          Get-ChildItem -Path "bin" -Recurse -File | ForEach-Object { Write-Host $_.FullName }
+          
+          Write-Host "=== Root directory ==="
+          Get-ChildItem -Path "." -Filter "*.zip" | ForEach-Object { Write-Host $_.Name }
+
       - name: Find and rename server archive
         run: |
-          $serverZip = Get-ChildItem -Path "bin" -Filter "SS14.Server_win-x64.zip" -Recurse | Select-Object -First 1
+          # Ищем во всех возможных местах
+          $serverZip = Get-ChildItem -Path "." -Filter "SS14.Server_win-x64.zip" -Recurse | Select-Object -First 1
           if ($serverZip) {
             Write-Host "Found: $($serverZip.FullName)"
             $newName = "SS14.Server_${{ steps.version.outputs.VERSION }}.zip"
