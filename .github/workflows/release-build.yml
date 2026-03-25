@@ -1,0 +1,104 @@
+name: Build and Release
+
+concurrency:
+  group: release
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          submodules: 'recursive'
+          fetch-depth: 0
+
+      - name: Get version info
+        id: version
+        run: |
+          $lastTag = git describe --tags --abbrev=0 2>$null
+          if ($lastTag) {
+            $lastVersion = $lastTag -replace 'v', ''
+            $parts = $lastVersion.Split('.')
+            $newMinor = [int]$parts[1] + 1
+            $newVersion = "$($parts[0]).$newMinor"
+          } else {
+            $newVersion = "1.0"
+          }
+          $newTag = "v$newVersion"
+          Write-Host "New version: $newVersion"
+          Write-Host "New tag: $newTag"
+          echo "VERSION=$newVersion" >> $env:GITHUB_OUTPUT
+          echo "TAG=$newTag" >> $env:GITHUB_OUTPUT
+
+      - name: Create tag for release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.version.outputs.TAG }}
+          git push origin ${{ steps.version.outputs.TAG }}
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v4.1.0
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Install dependencies
+        run: dotnet restore
+
+      - name: Build Packaging
+        run: dotnet build Content.Packaging --configuration Release --no-restore /m
+
+      - name: Package server (Windows x64)
+        run: dotnet run --project Content.Packaging server --platform win-x64
+
+      - name: Find and rename server archive
+        run: |
+          $serverZip = Get-ChildItem -Path "bin" -Filter "SS14.Server_win-x64.zip" -Recurse | Select-Object -First 1
+          if ($serverZip) {
+            Write-Host "Found: $($serverZip.FullName)"
+            $newName = "SS14.Server_${{ steps.version.outputs.VERSION }}.zip"
+            Copy-Item $serverZip.FullName -Destination ".\$newName"
+            echo "SERVER_ZIP=$newName" >> $env:GITHUB_ENV
+          } else {
+            Write-Error "SS14.Server_win-x64.zip not found!"
+            exit 1
+          }
+
+      - name: Get changelog
+        id: changelog
+        run: |
+          $lastTag = git describe --tags --abbrev=0 2>$null
+
+          if ($lastTag) {
+            $commits = git log "$lastTag..HEAD" --pretty=format:"- %s"
+          } else {
+            $commits = git log -10 --pretty=format:"- %s"
+          }
+
+          echo "CHANGELOG<<EOF" >> $env:GITHUB_OUTPUT
+          $commits | ForEach-Object { echo $_ } >> $env:GITHUB_OUTPUT
+          echo "EOF" >> $env:GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.TAG }}
+          name: Версия ${{ steps.version.outputs.VERSION }}
+          files: ${{ env.SERVER_ZIP }}
+          body: |
+            ## Изменения в версии ${{ steps.version.outputs.VERSION }}
+
+            ${{ steps.changelog.outputs.CHANGELOG }}
+
+            ---
+            **Сборка:** SS14.Server_win-x64.zip
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
