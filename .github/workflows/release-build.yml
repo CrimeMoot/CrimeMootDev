@@ -24,13 +24,11 @@ jobs:
         run: |
           $lastTag = git describe --tags --abbrev=0 2>$null
           $exitCode = $LASTEXITCODE
-
           if ($exitCode -eq 0 -and $lastTag) {
             $lastVersion = $lastTag -replace 'v', ''
             $parts = $lastVersion.Split('.')
             $major = [int]$parts[0]
             $minor = [int]$parts[1]
-
             if ($minor -ge 9) {
               $major++
               $minor = 0
@@ -47,7 +45,6 @@ jobs:
           echo "VERSION=$newVersion" >> $env:GITHUB_OUTPUT
           echo "TAG=$newTag" >> $env:GITHUB_OUTPUT
           exit 0
-
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v4.1.0
         with:
@@ -65,41 +62,59 @@ jobs:
       - name: Package client
         run: dotnet run --project Content.Packaging client --no-wipe-release
 
-      - name: Find and rename server archive
+      - name: Create release archive
         run: |
+          # Находим архив сервера
           $serverZip = Get-ChildItem -Path "." -Filter "SS14.Server_win-x64.zip" -Recurse | Select-Object -First 1
-          if ($serverZip) {
-            Write-Host "Found: $($serverZip.FullName)"
-            $newName = "SS14.Server_${{ steps.version.outputs.VERSION }}.zip"
-            Copy-Item $serverZip.FullName -Destination ".\$newName"
-            echo "SERVER_ZIP=$newName" >> $env:GITHUB_ENV
-          } else {
+          # Находим архив клиента
+          $clientZip = Get-ChildItem -Path "." -Filter "SS14.Client_win-x64.zip" -Recurse | Select-Object -First 1
+          
+          if (-not $serverZip) {
             Write-Error "SS14.Server_win-x64.zip not found!"
             exit 1
           }
-
+          if (-not $clientZip) {
+            Write-Error "SS14.Client_win-x64.zip not found!"
+            exit 1
+          }
+          
+          Write-Host "Server: $($serverZip.FullName)"
+          Write-Host "Client: $($clientZip.FullName)"
+          
+          # Создаём папку для распаковки
+          $extractDir = "release_content"
+          New-Item -ItemType Directory -Force -Path $extractDir | Out-Null
+          
+          # Распаковываем сервер
+          Expand-Archive -Path $serverZip.FullName -DestinationPath $extractDir -Force
+          
+          # Распаковываем клиент (в ту же папку)
+          Expand-Archive -Path $clientZip.FullName -DestinationPath $extractDir -Force
+          
+          # Создаём итоговый архив
+          $newName = "SS14.Server_${{ steps.version.outputs.VERSION }}.zip"
+          Compress-Archive -Path "$extractDir\*" -DestinationPath $newName -Force
+          
+          Write-Host "Created: $newName"
+          echo "SERVER_ZIP=$newName" >> $env:GITHUB_ENV
       - name: Create tag for release
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag ${{ steps.version.outputs.TAG }}
           git push origin ${{ steps.version.outputs.TAG }}
-
       - name: Get changelog
         id: changelog
         run: |
           $lastTag = git describe --tags --abbrev=0 2>$null
-
           if ($lastTag) {
             $commits = git log "$lastTag..HEAD" --pretty=format:"- %s"
           } else {
             $commits = git log -10 --pretty=format:"- %s"
           }
-
           echo "CHANGELOG<<EOF" >> $env:GITHUB_OUTPUT
           $commits | ForEach-Object { echo $_ } >> $env:GITHUB_OUTPUT
           echo "EOF" >> $env:GITHUB_OUTPUT
-
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
@@ -108,15 +123,13 @@ jobs:
           files: ${{ env.SERVER_ZIP }}
           body: |
             ## Изменения в версии ${{ steps.version.outputs.VERSION }}
-
             ${{ steps.changelog.outputs.CHANGELOG }}
-
             ---
             **Сборка:** SS14.Server_${{ steps.version.outputs.VERSION }}.zip
-
             **Включает:**
             - Сервер (Robust.Server.exe)
             - Клиент (Robust.Client.exe)
+            Для запуска следует запустить оба .bat файла.
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
