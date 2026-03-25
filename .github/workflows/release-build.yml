@@ -24,13 +24,11 @@ jobs:
         run: |
           $lastTag = git describe --tags --abbrev=0 2>$null
           $exitCode = $LASTEXITCODE
-
           if ($exitCode -eq 0 -and $lastTag) {
             $lastVersion = $lastTag -replace 'v', ''
             $parts = $lastVersion.Split('.')
             $major = [int]$parts[0]
             $minor = [int]$parts[1]
-
             if ($minor -ge 9) {
               $major++
               $minor = 0
@@ -47,7 +45,6 @@ jobs:
           echo "VERSION=$newVersion" >> $env:GITHUB_OUTPUT
           echo "TAG=$newTag" >> $env:GITHUB_OUTPUT
           exit 0
-
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v4.1.0
         with:
@@ -100,29 +97,24 @@ jobs:
           
           Write-Host "Created: $newName"
           echo "SERVER_ZIP=$newName" >> $env:GITHUB_ENV
-
       - name: Create tag for release
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag ${{ steps.version.outputs.TAG }}
           git push origin ${{ steps.version.outputs.TAG }}
-
       - name: Get changelog
         id: changelog
         run: |
           $lastTag = git describe --tags --abbrev=0 2>$null
-
           if ($lastTag) {
             $commits = git log "$lastTag..HEAD" --pretty=format:"- %s"
           } else {
             $commits = git log -10 --pretty=format:"- %s"
           }
-
           echo "CHANGELOG<<EOF" >> $env:GITHUB_OUTPUT
           $commits | ForEach-Object { echo $_ } >> $env:GITHUB_OUTPUT
           echo "EOF" >> $env:GITHUB_OUTPUT
-
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
@@ -131,12 +123,9 @@ jobs:
           files: ${{ env.SERVER_ZIP }}
           body: |
             ## Изменения в версии ${{ steps.version.outputs.VERSION }}
-
             ${{ steps.changelog.outputs.CHANGELOG }}
-
             ---
             **Сборка:** SS14.Server_${{ steps.version.outputs.VERSION }}.zip
-
             **Включает:**
             - Сервер (Robust.Server.exe)
             - Клиент (Robust.Client.exe)
