@@ -31,7 +31,6 @@ jobs:
             $major = [int]$parts[0]
             $minor = [int]$parts[1]
 
-            # Если minor >= 9, увеличиваем major и сбрасываем minor
             if ($minor -ge 9) {
               $major++
               $minor = 0
@@ -63,17 +62,36 @@ jobs:
       - name: Package server (Windows x64)
         run: dotnet run --project Content.Packaging server --platform win-x64
 
-      - name: Debug - Show bin structure
+      - name: Package client
+        run: dotnet run --project Content.Packaging client --no-wipe-release
+
+      - name: Create launcher bat file
         run: |
-          Write-Host "=== Bin directory ==="
-          Get-ChildItem -Path "bin" -Recurse -File | ForEach-Object { Write-Host $_.FullName }
-          
-          Write-Host "=== Root directory ==="
-          Get-ChildItem -Path "." -Filter "*.zip" | ForEach-Object { Write-Host $_.Name }
+          $batContent = @"
+@echo off
+echo Запуск сервера...
+start "" "Robust.Server.exe"
+
+timeout /t 3 /nobreak >nul
+
+echo Запуск клиента...
+start "" "Robust.Client.exe"
+
+echo Сервер и клиент запущены!
+pause
+"@
+          $batPath = "bin\server\run_server_client.bat"
+          if (Test-Path $batPath) {
+            Set-Content -Path $batPath -Value $batContent -Encoding ASCII
+          } else {
+            New-Item -ItemType Directory -Force -Path "bin\server" | Out-Null
+            Set-Content -Path $batPath -Value $batContent -Encoding ASCII
+          }
+
+          Copy-Item $batPath -Destination ".\run_server_client.bat" -Force
 
       - name: Find and rename server archive
         run: |
-          # Ищем во всех возможных местах
           $serverZip = Get-ChildItem -Path "." -Filter "SS14.Server_win-x64.zip" -Recurse | Select-Object -First 1
           if ($serverZip) {
             Write-Host "Found: $($serverZip.FullName)"
@@ -119,7 +137,12 @@ jobs:
             ${{ steps.changelog.outputs.CHANGELOG }}
 
             ---
-            **Сборка:** SS14.Server_win-x64.zip
+            **Сборка:** SS14.Server_${{ steps.version.outputs.VERSION }}.zip
+
+            **Включает:**
+            - Сервер (Robust.Server.exe)
+            - Клиент (Robust.Client.exe)
+            - Запуск сразу и того и другого (run_server_client.bat)
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
