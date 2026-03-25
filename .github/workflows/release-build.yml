@@ -56,11 +56,8 @@ jobs:
       - name: Build Packaging
         run: dotnet build Content.Packaging --configuration Release --no-restore /m
 
-      - name: Package server (Windows x64)
-        run: dotnet run --project Content.Packaging server --platform win-x64
-
-      - name: Package client
-        run: dotnet run --project Content.Packaging client --no-wipe-release
+      - name: Package server with client (Hybrid ACZ)
+        run: dotnet run --project Content.Packaging server --platform win-x64 --hybrid-acz
 
       - name: List all zip files
         run: |
@@ -69,29 +66,16 @@ jobs:
       - name: Create release archive
         run: |
           $serverZip = Get-ChildItem -Path "release" -Filter "SS14.Server_win-x64.zip" | Select-Object -First 1
-          $clientZip = Get-ChildItem -Path "release" -Filter "SS14.Client.zip" | Select-Object -First 1
 
           if (-not $serverZip) {
             Write-Error "SS14.Server_win-x64.zip not found in release folder!"
             exit 1
           }
-          if (-not $clientZip) {
-            Write-Error "SS14.Client.zip not found in release folder!"
-            exit 1
-          }
 
-          Write-Host "Server: $($serverZip.FullName)"
-          Write-Host "Client: $($clientZip.FullName)"
-
-          $extractDir = "release_content"
-          New-Item -ItemType Directory -Force -Path $extractDir | Out-Null
-
-          Expand-Archive -Path $serverZip.FullName -DestinationPath $extractDir -Force
-
-          Expand-Archive -Path $clientZip.FullName -DestinationPath $extractDir -Force
+          Write-Host "Server (with client): $($serverZip.FullName)"
 
           $newName = "SS14.Server_${{ steps.version.outputs.VERSION }}.zip"
-          Compress-Archive -Path "$extractDir\*" -DestinationPath $newName -Force
+          Copy-Item $serverZip.FullName -Destination ".\$newName"
 
           Write-Host "Created: $newName"
           echo "SERVER_ZIP=$newName" >> $env:GITHUB_ENV
