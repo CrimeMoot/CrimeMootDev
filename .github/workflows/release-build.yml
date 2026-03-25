@@ -23,7 +23,9 @@ jobs:
         id: version
         run: |
           $lastTag = git describe --tags --abbrev=0 2>$null
-          if ($lastTag) {
+          $exitCode = $LASTEXITCODE
+          
+          if ($exitCode -eq 0 -and $lastTag) {
             $lastVersion = $lastTag -replace 'v', ''
             $parts = $lastVersion.Split('.')
             $newMinor = [int]$parts[1] + 1
@@ -36,6 +38,7 @@ jobs:
           Write-Host "New tag: $newTag"
           echo "VERSION=$newVersion" >> $env:GITHUB_OUTPUT
           echo "TAG=$newTag" >> $env:GITHUB_OUTPUT
+          exit 0
 
       - name: Create tag for release
         run: |
