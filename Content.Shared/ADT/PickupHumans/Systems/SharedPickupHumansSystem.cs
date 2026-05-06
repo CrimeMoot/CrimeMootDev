@@ -13,7 +13,6 @@ using Content.Shared.Inventory.VirtualItem;
 using Content.Shared.ADT.Shadekin;
 using Content.Shared.Hands.Components;
 using Content.Shared.Hands;
-using Content.Shared.Hands.EntitySystems;
 using Content.Shared.ADT.Components.PickupHumans;
 using Content.Shared.Movement.Systems;
 using Content.Shared.Mobs;
@@ -26,14 +25,18 @@ using Content.Shared.Movement.Pulling.Components;
 using Robust.Shared.Containers;
 using Content.Shared.Buckle.Components;
 using Content.Shared.Weapons.Melee;
+using Robust.Shared.Physics.Systems;
+using Robust.Shared.Physics.Components;
+using Robust.Shared.Physics;
+using System.Numerics;
 
 namespace Content.Shared.ADT.Systems.PickupHumans;
 
 public abstract class SharedPickupHumansSystem : EntitySystem
 {
+    private static readonly Vector2 CarryLocalPosition = Vector2.Zero;
     [Dependency] private readonly StandingStateSystem _standing = default!;
     [Dependency] private readonly ActionBlockerSystem _actionBlocker = default!;
-    [Dependency] private readonly SharedHandsSystem _hands = default!;
     [Dependency] private readonly SharedPopupSystem _popup = default!;
     [Dependency] private readonly AlertsSystem _alerts = default!;
     [Dependency] private readonly SharedVirtualItemSystem _virtualItemSystem = default!;
@@ -42,6 +45,7 @@ public abstract class SharedPickupHumansSystem : EntitySystem
     [Dependency] private readonly SharedDoAfterSystem _doAfter = default!;
     [Dependency] private readonly MovementSpeedModifierSystem _movementSpeedModifier = default!;
     [Dependency] private readonly SharedTransformSystem _transform = default!;
+    [Dependency] private readonly SharedPhysicsSystem _physics = default!;
     public override void Initialize()
     {
         base.Initialize();
@@ -222,10 +226,19 @@ public abstract class SharedPickupHumansSystem : EntitySystem
 
         _standing.Down(target, dropHeldItems: false);
 
+        if (TryComp<PhysicsComponent>(target, out var physTarget))
+        {
+            _physics.SetLinearVelocity(target, CarryLocalPosition, body: physTarget);
+            _physics.SetCanCollide(target, false, body: physTarget);
+            _physics.SetBodyType(target, BodyType.Static, body: physTarget);
+        }
+
         _transform.AttachToGridOrMap(uid);
         _transform.AttachToGridOrMap(target);
-        _transform.SetCoordinates(target, Transform(uid).Coordinates);
         _transform.SetParent(target, uid);
+        _transform.SetLocalPositionNoLerp(target, CarryLocalPosition);
+
+        Dirty(target, Transform(target));
 
         for (var i = 0; i < 2; i++)
         {
@@ -256,7 +269,6 @@ public abstract class SharedPickupHumansSystem : EntitySystem
         RemComp<TakenHumansComponent>(target);
         RemComp<KnockedDownComponent>(target);
 
-
         var meleeWeaponCompUid = EnsureComp<MeleeWeaponComponent>(uid);
         var meleeWeaponCompTarget = EnsureComp<MeleeWeaponComponent>(target);
 
@@ -267,10 +279,16 @@ public abstract class SharedPickupHumansSystem : EntitySystem
 
         _virtualItemSystem.DeleteInHandsMatching(uid, target);
 
-        _transform.AttachToGridOrMap(target);
-        _actionBlocker.UpdateCanMove(target);
+        _transform.DropNextTo(target, uid);
 
-        _hands.TryDrop(uid, target);
+        if (TryComp<PhysicsComponent>(target, out var physTarget))
+        {
+            _physics.SetBodyType(target, BodyType.Dynamic, body: physTarget);
+            _physics.SetCanCollide(target, true, body: physTarget);
+            _physics.SetLinearVelocity(target, CarryLocalPosition, body: physTarget);
+        }
+
+        _actionBlocker.UpdateCanMove(target);
     }
 
     private bool CanPickup(EntityUid uid, EntityUid target, PickupHumansComponent? pickupComp)
