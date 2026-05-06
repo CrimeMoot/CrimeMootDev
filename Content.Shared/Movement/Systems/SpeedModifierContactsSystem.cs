@@ -6,6 +6,8 @@ using Content.Shared.Whitelist;
 using Robust.Shared.Physics.Components;
 using Robust.Shared.Physics.Events;
 using Robust.Shared.Physics.Systems;
+using Robust.Shared.Map;
+using Robust.Shared.Map.Components;
 
 namespace Content.Shared.Movement.Systems;
 
@@ -15,6 +17,7 @@ public sealed class SpeedModifierContactsSystem : EntitySystem
     [Dependency] private readonly SharedGravitySystem _gravity = default!;
     [Dependency] private readonly MovementSpeedModifierSystem _speedModifierSystem = default!;
     [Dependency] private readonly EntityWhitelistSystem _whitelistSystem = default!;
+    [Dependency] private readonly SharedMapSystem _mapSystem = default!;  // ADT-Tweak
 
     // TODO full-game-save
     // Either these need to be processed before a map is saved, or slowed/slowing entities need to update on init.
@@ -69,11 +72,32 @@ public sealed class SpeedModifierContactsSystem : EntitySystem
 
     private void OnShutdown(EntityUid uid, SpeedModifierContactsComponent component, ComponentShutdown args)
     {
-        if (!TryComp(uid, out PhysicsComponent? phys))
-            return;
+        // ADT-Tweak start
 
-        // Note that the entity may not be getting deleted here. E.g., glue puddles.
-        _toUpdate.UnionWith(_physics.GetContactingEntities(uid, phys));
+        if (TryComp(uid, out PhysicsComponent? phys))
+        {
+            var contacting = _physics.GetContactingEntities(uid, phys);
+            _toUpdate.UnionWith(contacting);
+        }
+
+        if (TryComp(uid, out TransformComponent? xform))
+        {
+            var gridUid = xform.GridUid;
+            if (gridUid != null && gridUid.Value.IsValid())
+            {
+                if (EntityManager.TryGetComponent(gridUid, out MapGridComponent? grid))
+                {
+                    var tilePos = _mapSystem.TileIndicesFor(gridUid.Value, grid, xform.Coordinates);
+
+                    foreach (var ent in _mapSystem.GetAnchoredEntities(gridUid.Value, grid, tilePos))
+                    {
+                        if (ent != uid && HasComp<SpeedModifiedByContactComponent>(ent))
+                            _toUpdate.Add(ent);
+                    }
+                }
+            }
+        }
+        // ADT-Tweak end
     }
 
     private void OnRefreshMovementSpeedModifiers(EntityUid uid, SpeedModifiedByContactComponent component, RefreshMovementSpeedModifiersEvent args)
