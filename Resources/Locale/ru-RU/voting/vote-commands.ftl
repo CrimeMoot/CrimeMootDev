@@ -11,9 +11,10 @@ cmd-createvote-arg-vote-type = <vote type>
 ## 'customvote' command
 
 cmd-customvote-desc = Создаёт настраиваемое голосование
-cmd-customvote-help = Использование: customvote <title> <option1> <option2> [option3...]
+cmd-customvote-help = Использование: customvote <title> <option1> <option2> [option3...] [true/false]
 cmd-customvote-on-finished-tie = Голосование "{ $title }" закончилось: ничья между { $ties }!
 cmd-customvote-on-finished-win = Голосование "{ $title }" закончилось: { $winner } побеждает!
+cmd-customvote-on-finished-win-weighted = Голосование (взвешенный рандом): "{ $title }" закончилось: { $winner } побеждает!
 cmd-customvote-arg-title = <title>
 cmd-customvote-arg-option-n = <option{ $n }>
 

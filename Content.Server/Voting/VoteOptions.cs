@@ -75,5 +75,6 @@ namespace Content.Server.Voting
                 InitiatorText = Loc.GetString("vote-options-server-initiator-text");
             }
         }
+        public bool WeightedWinner { get; set; } // ADT-Tweak 
     }
 }

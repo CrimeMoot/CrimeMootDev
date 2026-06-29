@@ -211,7 +211,7 @@ namespace Content.Server.Voting.Managers
             var start = _timing.RealTime;
             var end = start + options.Duration;
             var reg = new VoteReg(id, entries, options.Title, options.InitiatorText,
-                options.InitiatorPlayer, start, end, options.VoterEligibility, options.DisplayVotes, options.TargetEntity);
+                options.InitiatorPlayer, start, end, options.VoterEligibility, options.DisplayVotes, options.TargetEntity, options.WeightedWinner); // ADT-Tweak 
 
             var handle = new VoteHandle(this, reg);
 
@@ -412,7 +412,28 @@ namespace Content.Server.Voting.Managers
 
             v.Finished = true;
             v.Dirty = true;
-            var args = new VoteFinishedEventArgs(winners.Length == 1 ? winners[0] : null, winners, voteTally);
+
+            // ADT-Tweak start
+            object? weightedWinner = null;
+            if (v.IsWeighted)
+            {
+                var totalVotes = v.Entries.Sum(e => e.Votes);
+                if (totalVotes > 0)
+                {
+                    var weightedPool = new List<object>();
+                    foreach (var entry in v.Entries)
+                    {
+                        for (int i = 0; i < entry.Votes; i++)
+                        {
+                            weightedPool.Add(entry.Data);
+                        }
+                    }
+                    weightedWinner = _random.Pick(weightedPool);
+                }
+            }
+            // ADT-Tweak emd
+
+            var args = new VoteFinishedEventArgs(winners.Length == 1 ? winners[0] : null, winners, voteTally, weightedWinner); // ADT-Tweak 
             v.OnFinished?.Invoke(_voteHandles[v.Id], args);
             DirtyCanCallVoteAll();
         }
@@ -510,17 +531,20 @@ namespace Content.Server.Voting.Managers
             public readonly VoterEligibility VoterEligibility;
             public readonly bool DisplayVotes;
             public readonly NetEntity? TargetEntity;
+            public readonly bool IsWeighted; // ADT-Tweak 
 
             public bool Cancelled;
             public bool Finished;
             public bool Dirty = true;
+
+            public object? WeightedWinner; // ADT-Tweak 
 
             public VoteFinishedEventHandler? OnFinished;
             public VoteCancelledEventHandler? OnCancelled;
             public ICommonSession? Initiator { get; }
 
             public VoteReg(int id, VoteEntry[] entries, string title, string initiatorText,
-                ICommonSession? initiator, TimeSpan start, TimeSpan end, VoterEligibility voterEligibility, bool displayVotes, NetEntity? targetEntity)
+                ICommonSession? initiator, TimeSpan start, TimeSpan end, VoterEligibility voterEligibility, bool displayVotes, NetEntity? targetEntity, bool isWeighted = false) // ADT-Tweak 
             {
                 Id = id;
                 Entries = entries;
@@ -532,6 +556,7 @@ namespace Content.Server.Voting.Managers
                 VoterEligibility = voterEligibility;
                 DisplayVotes = displayVotes;
                 TargetEntity = targetEntity;
+                IsWeighted = isWeighted; // ADT-Tweak 
             }
         }
 
@@ -574,6 +599,7 @@ namespace Content.Server.Voting.Managers
             public IReadOnlyDictionary<ICommonSession, int> CastVotes => _reg.CastVotes;
 
             public IReadOnlyDictionary<object, int> VotesPerOption { get; }
+            public object? WeightedWinner => _reg.WeightedWinner; // ADT-Tweak 
 
             public event VoteFinishedEventHandler? OnFinished
             {

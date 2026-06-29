@@ -12,9 +12,11 @@ ui-vote-restart-abstain = Воздерживаюсь
 ui-vote-gamemode-title = Следующий режим игры
 ui-vote-gamemode-tie = Ничья в голосовании за игровой режим! Выбирается... { $picked }
 ui-vote-gamemode-win = { $winner } победил в голосовании за игровой режим!
+ui-vote-gamemode-win-weighted = Голосование (взвешенный рандом): { $winner } выиграл голосование за игровой режим!
 ui-vote-map-title = Следующая карта
 ui-vote-map-tie = Ничья при голосовании за карту! Выбирается... { $picked }
 ui-vote-map-win = { $winner } выиграла голосование о выборе карты!
+ui-vote-map-win-weighted = Голосование (взвешенный рандом): { $winner } выиграла голосование о выборе карты!
 ui-vote-map-notlobby = Голосование о выборе карты действует только в предраундовом лобби!
 ui-vote-map-notlobby-time = Голосование о выборе карты действует только в предраундовом лобби, когда осталось { $time }!
 # Votekick votes
@@ -28,3 +30,4 @@ ui-vote-votekick-success = Голосование за кик { $target } про
 ui-vote-votekick-failure = Голосование за кик { $target } провалилось. Причина кика: { $reason }
 ui-vote-votekick-not-enough-eligible = Недостаточное количество подходящих голосующих онлайн для начала голосования: { $voters }/{ $requirement }
 ui-vote-votekick-server-cancelled = Голосование за кик { $target } отменено сервером.
+

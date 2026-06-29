@@ -20,11 +20,14 @@ namespace Content.Server.Voting
         /// </summary>
         public readonly List<int> Votes;
 
-        public VoteFinishedEventArgs(object? winner, ImmutableArray<object> winners, List<int> votes)
+        public readonly object? WeightedWinner; // ADT-Tweak 
+
+        public VoteFinishedEventArgs(object? winner, ImmutableArray<object> winners, List<int> votes, object? weightedWinner = null) // ADT-Tweak 
         {
             Winner = winner;
             Winners = winners;
             Votes = votes;
+            WeightedWinner = weightedWinner; // ADT-Tweak 
         }
     }
 }

@@ -96,14 +96,25 @@ namespace Content.Server.Voting
             }
 
             var title = args[0];
+            // ADT-Tweak start
+            var isWeighted = false;
+            var optionsEnd = args.Length;
+
+            if (args.Length >= 3 && string.Equals(args[args.Length - 1], "true", StringComparison.OrdinalIgnoreCase))
+            {
+                isWeighted = true;
+                optionsEnd = args.Length - 1;
+            }
+            // ADT-Tweak end
 
             var options = new VoteOptions
             {
                 Title = title,
                 Duration = TimeSpan.FromSeconds(30),
+                WeightedWinner = isWeighted // ADT-Tweak 
             };
 
-            for (var i = 1; i < args.Length; i++)
+            for (var i = 1; i < optionsEnd; i++) // ADT-Tweak 
             {
                 options.Options.Add((args[i], i));
             }
@@ -121,7 +132,10 @@ namespace Content.Server.Voting
 
             vote.OnFinished += (_, eventArgs) =>
             {
-                if (eventArgs.Winner == null)
+                // ADT-Tweak start
+                var picked = eventArgs.WeightedWinner ?? eventArgs.Winner;
+                if (picked == null)
+                // ADT-Tweak  end
                 {
                     var ties = string.Join(", ", eventArgs.Winners.Select(c => args[(int) c]));
                     _adminLogger.Add(LogType.Vote, LogImpact.Medium, $"Custom vote {options.Title} finished as tie: {ties}");
@@ -129,8 +143,15 @@ namespace Content.Server.Voting
                 }
                 else
                 {
-                    _adminLogger.Add(LogType.Vote, LogImpact.Medium, $"Custom vote {options.Title} finished: {args[(int) eventArgs.Winner]}");
-                    _chatManager.DispatchServerAnnouncement(Loc.GetString("cmd-customvote-on-finished-win", ("title", options.Title), ("winner", args[(int) eventArgs.Winner])));
+                    // ADT-Tweak start
+                    var winnerText = args[(int) picked];
+                    _adminLogger.Add(LogType.Vote, LogImpact.Medium, $"Custom vote {options.Title} finished: {winnerText}");
+                    var locKey = eventArgs.WeightedWinner != null 
+                        ? "cmd-customvote-on-finished-win-weighted" 
+                        : "cmd-customvote-on-finished-win";
+                    _chatManager.DispatchServerAnnouncement(
+                        Loc.GetString(locKey, ("title", options.Title), ("winner", winnerText)));
+                    // ADT-Tweak end
                 }
 
                 _voteWebhooks.UpdateWebhookIfConfigured(webhookState, eventArgs);

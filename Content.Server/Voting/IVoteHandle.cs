@@ -53,6 +53,8 @@ namespace Content.Server.Voting
         /// </summary>
         IReadOnlyDictionary<object, int> VotesPerOption { get; }
 
+        object? WeightedWinner { get; } // ADT-Tweak 
+
         /// <summary>
         /// Invoked when this vote has successfully finished.
         /// </summary>

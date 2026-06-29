@@ -225,7 +225,8 @@ namespace Content.Server.Voting.Managers
                 Title = Loc.GetString("ui-vote-gamemode-title"),
                 Duration = alone
                     ? TimeSpan.FromSeconds(_cfg.GetCVar(CCVars.VoteTimerAlone))
-                    : TimeSpan.FromSeconds(_cfg.GetCVar(CCVars.VoteTimerPreset))
+                    : TimeSpan.FromSeconds(_cfg.GetCVar(CCVars.VoteTimerPreset)),
+                WeightedWinner = true // ADT-Tweak 
             };
 
             if (alone)
@@ -242,22 +243,27 @@ namespace Content.Server.Voting.Managers
 
             vote.OnFinished += (_, args) =>
             {
-                string picked;
-                if (args.Winner == null)
+                // ADT-Tweak start
+                var picked = args.WeightedWinner ?? args.Winner;
+                if (picked == null)
                 {
-                    picked = (string) _random.Pick(args.Winners);
+                    var tieOption = (string) _random.Pick(args.Winners);
                     _chatManager.DispatchServerAnnouncement(
-                        Loc.GetString("ui-vote-gamemode-tie", ("picked", Loc.GetString(presets[picked]))));
+                        Loc.GetString("ui-vote-gamemode-tie", ("picked", Loc.GetString(presets[tieOption]))));
                 }
                 else
                 {
-                    picked = (string) args.Winner;
+                    var presetKey = (string) picked;
+                    var locKey = args.WeightedWinner != null 
+                        ? "ui-vote-gamemode-win-weighted" 
+                        : "ui-vote-gamemode-win";
                     _chatManager.DispatchServerAnnouncement(
-                        Loc.GetString("ui-vote-gamemode-win", ("winner", Loc.GetString(presets[picked]))));
+                        Loc.GetString(locKey, ("winner", Loc.GetString(presets[presetKey]))));
+                    _adminLogger.Add(LogType.Vote, LogImpact.Medium, $"Preset vote finished: {presetKey}");
+                    var ticker = _entityManager.EntitySysManager.GetEntitySystem<GameTicker>();
+                    ticker.SetGamePreset(presetKey);
                 }
-                _adminLogger.Add(LogType.Vote, LogImpact.Medium, $"Preset vote finished: {picked}");
-                var ticker = _entityManager.EntitySysManager.GetEntitySystem<GameTicker>();
-                ticker.SetGamePreset(picked);
+                // ADT-Tweak end
             };
         }
 
@@ -271,7 +277,8 @@ namespace Content.Server.Voting.Managers
                 Title = Loc.GetString("ui-vote-map-title"),
                 Duration = alone
                     ? TimeSpan.FromSeconds(_cfg.GetCVar(CCVars.VoteTimerAlone))
-                    : TimeSpan.FromSeconds(_cfg.GetCVar(CCVars.VoteTimerMap))
+                    : TimeSpan.FromSeconds(_cfg.GetCVar(CCVars.VoteTimerMap)),
+                WeightedWinner = true // ADT-Tweak 
             };
 
             if (alone)
@@ -288,44 +295,48 @@ namespace Content.Server.Voting.Managers
 
             vote.OnFinished += (_, args) =>
             {
-                GameMapPrototype picked;
-                if (args.Winner == null)
+                // ADT-Tweak start
+                var picked = args.WeightedWinner ?? args.Winner;
+                if (picked == null)
                 {
-                    picked = (GameMapPrototype) _random.Pick(args.Winners);
+                    var tieOption = (GameMapPrototype) _random.Pick(args.Winners);
                     _chatManager.DispatchServerAnnouncement(
-                        Loc.GetString("ui-vote-map-tie", ("picked", maps[picked])));
+                        Loc.GetString("ui-vote-map-tie", ("picked", maps[tieOption])));
                 }
                 else
                 {
-                    picked = (GameMapPrototype) args.Winner;
+                    var mapProto = (GameMapPrototype) picked;
+                    var locKey = args.WeightedWinner != null 
+                        ? "ui-vote-map-win-weighted" 
+                        : "ui-vote-map-win";
                     _chatManager.DispatchServerAnnouncement(
-                        Loc.GetString("ui-vote-map-win", ("winner", maps[picked])));
-                }
-
-                _adminLogger.Add(LogType.Vote, LogImpact.Medium, $"Map vote finished: {picked.MapName}");
-                var ticker = _entityManager.EntitySysManager.GetEntitySystem<GameTicker>();
-                if (ticker.CanUpdateMap())
-                {
-                    if (_gameMapManager.CheckMapExists(picked.ID))
+                        Loc.GetString(locKey, ("winner", maps[mapProto])));
+                    _adminLogger.Add(LogType.Vote, LogImpact.Medium, $"Map vote finished: {mapProto.MapName}");
+                    var ticker = _entityManager.EntitySysManager.GetEntitySystem<GameTicker>();
+                    if (ticker.CanUpdateMap())
                     {
-                        _gameMapManager.SelectMap(picked.ID);
-                        ticker.UpdateInfoText();
+                        if (_gameMapManager.CheckMapExists(mapProto.ID))
+                        {
+                            _gameMapManager.SelectMap(mapProto.ID);
+                            ticker.UpdateInfoText();
+                        }
+                        else
+                        {
+                            _chatManager.DispatchServerAnnouncement(Loc.GetString("ui-vote-map-invalid", ("winner", maps[mapProto])));
+                        }
                     }
+                    // ADT-Tweak end
                     else
                     {
-                        _chatManager.DispatchServerAnnouncement(Loc.GetString("ui-vote-map-invalid", ("winner", maps[picked])));
-                    }
-                }
-                else
-                {
-                    if (ticker.RoundPreloadTime <= TimeSpan.Zero)
-                    {
-                        _chatManager.DispatchServerAnnouncement(Loc.GetString("ui-vote-map-notlobby"));
-                    }
-                    else
-                    {
-                        var timeString = $"{ticker.RoundPreloadTime.Minutes:0}:{ticker.RoundPreloadTime.Seconds:00}";
-                        _chatManager.DispatchServerAnnouncement(Loc.GetString("ui-vote-map-notlobby-time", ("time", timeString)));
+                        if (ticker.RoundPreloadTime <= TimeSpan.Zero)
+                        {
+                            _chatManager.DispatchServerAnnouncement(Loc.GetString("ui-vote-map-notlobby"));
+                        }
+                        else
+                        {
+                            var timeString = $"{ticker.RoundPreloadTime.Minutes:0}:{ticker.RoundPreloadTime.Seconds:00}";
+                            _chatManager.DispatchServerAnnouncement(Loc.GetString("ui-vote-map-notlobby-time", ("time", timeString)));
+                        }
                     }
                 }
             };

@@ -14,15 +14,18 @@ ui-vote-restart-abstain = Abstain
 ui-vote-gamemode-title = Next gamemode
 ui-vote-gamemode-tie = Tie for gamemode vote! Picking... { $picked }
 ui-vote-gamemode-win = { $winner } won the gamemode vote!
+ui-vote-gamemode-win-weighted = Vote (weighted random): { $winner } won the gamemode vote!
 
 ui-vote-map-title = Next map
 ui-vote-map-tie = Tie for map vote! Picking... { $picked }
 ui-vote-map-win = { $winner } won the map vote!
+ui-vote-map-win-weighted = Vote (weighted random): { $winner } won the map vote!
 ui-vote-map-notlobby = Voting for maps is only valid in the pre-round lobby!
 ui-vote-map-notlobby-time = Voting for maps is only valid in the pre-round lobby with { $time } remaining!
 ui-vote-map-invalid = { $winner } became invalid after the map vote! It will not be selected!
 
 # Votekick votes
+
 ui-vote-votekick-unknown-initiator = A player
 ui-vote-votekick-unknown-target = Unknown Player
 ui-vote-votekick-title = { $initiator } has called a votekick for user: { $targetEntity }. Reason: { $reason }
@@ -33,3 +36,4 @@ ui-vote-votekick-success = Votekick for { $target } succeeded. Votekick reason: 
 ui-vote-votekick-failure = Votekick for { $target } failed. Votekick reason: { $reason }
 ui-vote-votekick-not-enough-eligible = Not enough eligible voters online to start a votekick: { $voters }/{ $requirement }
 ui-vote-votekick-server-cancelled = Votekick for { $target } was cancelled by the server.
+
