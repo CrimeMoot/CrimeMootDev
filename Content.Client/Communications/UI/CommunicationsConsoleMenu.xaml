@@ -53,9 +53,16 @@
                 <RichTextLabel Name="CountdownLabel"/>
 
                 <Button Name="EmergencyShuttleButton"
-                    Access="Public" 
+                    Access="Public"
                     Text="Placeholder Text"
                     ToolTip="{Loc 'comms-console-menu-emergency-shuttle-button-tooltip'}"/>
+
+                <!-- ADT-Tweak-->
+                <Button Name="EmergencyAccessButton"
+                    Access="Public"
+                    Text="{Loc 'comms-console-menu-emergency-access-button'}"
+                    ToolTip="{Loc 'comms-console-menu-emergency-access-button-tooltip'}"
+                    StyleClasses="Danger"/>
             </BoxContainer>
         </BoxContainer>
     </BoxContainer>

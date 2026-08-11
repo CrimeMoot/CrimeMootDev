@@ -25,6 +25,7 @@ namespace Content.Client.Communications.UI
         public TimeSpan? CountdownEnd;
 
         public event Action? OnEmergencyLevel;
+        public event Action? OnEmergencyAccess; // ADT-Tweak
         public event Action<string>? OnAlertLevel;
         public event Action<string>? OnAnnounce;
         public event Action<string>? OnBroadcast;
@@ -72,6 +73,8 @@ namespace Content.Client.Communications.UI
 
             EmergencyShuttleButton.OnPressed += _ => OnEmergencyLevel?.Invoke();
             EmergencyShuttleButton.Disabled = !CanCall;
+
+            EmergencyAccessButton.OnPressed += _ => OnEmergencyAccess?.Invoke();
         }
 
         protected override void FrameUpdate(FrameEventArgs args)
